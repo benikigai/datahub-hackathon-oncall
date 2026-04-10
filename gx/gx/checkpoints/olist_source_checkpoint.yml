@@ -1,0 +1,51 @@
+name: olist_source_checkpoint
+config_version: 1.0
+template_name:
+module_name: great_expectations.checkpoint
+class_name: Checkpoint
+run_name_template:
+expectation_suite_name:
+batch_request: {}
+action_list:
+  - name: datahub_action
+    action:
+      module_name: datahub_gx_plugin.action
+      class_name: DataHubValidationAction
+      server_url: http://100.114.31.63:8080
+      token: 
+        eyJhbGciOiJIUzI1NiJ9.eyJhY3RvclR5cGUiOiJVU0VSIiwiYWN0b3JJZCI6ImRhdGFodWIiLCJ0eXBlIjoiUEVSU09OQUwiLCJ2ZXJzaW9uIjoiMiIsImp0aSI6ImFlZDRmOTQ3LTNlNTUtNDMzMS1iNzM1LTk5MTIxZGI3NDdjMCIsInN1YiI6ImRhdGFodWIiLCJleHAiOjE3NzgzOTgxNTUsImlzcyI6ImRhdGFodWItbWV0YWRhdGEtc2VydmljZSJ9.SmsNDa98ikTbaEBwdjPsKFHcQ4svDOD4L1vzy_nGFIw
+      platform_alias: sqlite
+      platform_instance_map:
+        olist_source_db: olist_source
+      convert_urns_to_lowercase: true
+      graceful_exceptions: false
+  - name: store_validation_result
+    action:
+      class_name: StoreValidationResultAction
+  - name: update_data_docs
+    action:
+      class_name: UpdateDataDocsAction
+evaluation_parameters: {}
+runtime_configuration: {}
+validations:
+  - batch_request:
+      datasource_name: olist_source_db
+      data_asset_name: main.olist_order_items
+      options: {}
+      batch_slice:
+    expectation_suite_name: olist_order_items_source_suite
+  - batch_request:
+      datasource_name: olist_source_db
+      data_asset_name: main.olist_customers
+      options: {}
+      batch_slice:
+    expectation_suite_name: olist_customers_source_suite
+  - batch_request:
+      datasource_name: olist_source_db
+      data_asset_name: main.olist_products
+      options: {}
+      batch_slice:
+    expectation_suite_name: olist_products_source_suite
+profilers: []
+ge_cloud_id:
+expectation_suite_ge_cloud_id:
