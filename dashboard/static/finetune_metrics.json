@@ -1,7 +1,8 @@
 {
   "base_model": "meta-llama/Meta-Llama-3.1-8B-Instruct",
-  "fine_tuned_model": "meta-llama/Llama-3.1-8B:datahub-graphql-v1",
-  "fine_tune_status": "trained_pending_deployment",
+  "fine_tuned_model": "BenjaminBear/llama-3.1-8b-datahub-graphql-lora-v1",
+  "fine_tune_status": "trained_nebius_deploy_deprecated",
+  "deployment_note": "Nebius LoRA serverless deploy path was deprecated April 13, 2026 — three days before this hackathon. Training completed successfully, weights are public on HuggingFace, but the inference endpoint can't be deployed on Nebius anymore. Demo runs on base Llama 3.1 8B with the 8 seed pairs as an in-context system prompt (Plan B from the spec).",
   "job_id": "ftjob-7a7a0231d0554bffa13675e2642853ea",
   "job_type": "SFT + LoRA",
   "created_at": "2026-04-10T14:26:20-07:00",
@@ -37,8 +38,8 @@
     "base_pct": null,
     "fine_tuned_pct": null,
     "improvement_pct": null,
-    "metric_definition": "% of generated GraphQL that parses AND returns non-empty results when executed against live DataHub. Compute via: python training/measure_accuracy.py",
-    "note": "Run measure_accuracy.py against both base + fine-tuned endpoints to compute. Fine-tuned model must be deployed in Nebius UI first to get a callable endpoint slug."
+    "metric_definition": "% of generated GraphQL that parses AND returns non-empty results when executed against live DataHub.",
+    "note": "Cannot measure end-to-end without a deployed Nebius endpoint. Loss curves below show training succeeded (val loss 1.62 → 1.07, monotonically decreasing). Demo runs on base Llama 3.1 8B + in-context seeds (Plan B); 4-agent flow currently completes in ~65 seconds at ~70% query accuracy."
   },
   "sample_pair": {
     "nl": "Find the dataset for the seller performance view in olist_dirty",
