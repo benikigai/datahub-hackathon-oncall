@@ -138,21 +138,25 @@
   <div class="model-badge" data-agent="coordinator">
     <div class="badge-name">COORDINATOR</div>
     <div class="badge-model">Kimi-K2-Thinking</div>
+    <div class="badge-role">Plans the run, dispatches the other agents, writes the final postmortem.</div>
     <div class="badge-meta">Moonshot · $0.60/$2.50 · 45.7 t/s · eu-north1</div>
   </div>
   <div class="model-badge" data-agent="detective">
     <div class="badge-name">DETECTIVE</div>
     <div class="badge-model">Llama 3.1 8B + LoRA</div>
+    <div class="badge-role">Identifies the affected dataset and traces upstream lineage via DataHub GraphQL.</div>
     <div class="badge-meta">Meta · $0.03/$0.09 · 155 t/s · eu-north1 fast</div>
   </div>
   <div class="model-badge" data-agent="reality_checker">
     <div class="badge-name">REALITY-CHECKER</div>
     <div class="badge-model">Llama 3.1 8B + LoRA</div>
-    <div class="badge-meta">Meta · same endpoint · L5 specialist</div>
+    <div class="badge-role">Diffs quality assertions across <code>olist_source</code> and the production instance.</div>
+    <div class="badge-meta">Meta · same endpoint, different prompt</div>
   </div>
   <div class="model-badge" data-agent="fixer">
     <div class="badge-name">FIXER</div>
     <div class="badge-model">MiniMax-M2.5</div>
+    <div class="badge-role">Writes incident annotations back to DataHub via Python SDK; drafts the Slack post.</div>
     <div class="badge-meta">MiniMax · $0.30/$1.20 · 36.8 t/s · us-central1</div>
   </div>
 </section>
@@ -222,6 +226,19 @@
     <div class="sample-nl"><strong>NL:</strong> <span id="sample-nl"></span></div>
     <pre><code class="language-graphql" id="sample-graphql"></code></pre>
   </details>
+
+  <h3 class="ft-section-title">Artifacts</h3>
+  <div class="ft-links">
+    <a id="ft-link-hf" href="#" target="_blank" rel="noreferrer" class="ft-link">
+      🤗 HuggingFace — model weights
+    </a>
+    <a id="ft-link-wandb" href="#" target="_blank" rel="noreferrer" class="ft-link">
+      📈 Weights &amp; Biases — training run
+    </a>
+    <a id="ft-link-gh" href="#" target="_blank" rel="noreferrer" class="ft-link">
+      💻 GitHub — full source
+    </a>
+  </div>
 </section>
 
 <section id="data">

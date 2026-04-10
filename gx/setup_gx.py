@@ -45,8 +45,11 @@ from datahub.metadata.schema_classes import (
 )
 
 # ─── Config ─────────────────────────────────────────────────────────────────
-DB_PATH = Path(__file__).parent / "data" / "olist_dirty.db"
-PLATFORM_INSTANCE = "olist_dirty"
+# Override via env vars to point this script at a different SQLite + instance:
+#   OLIST_DB=gx/data/olist_dirty_2.db OLIST_INSTANCE=olist_dirty_2 python gx/setup_gx.py
+DEFAULT_DB = Path(__file__).parent / "data" / "olist_dirty.db"
+DB_PATH = Path(os.environ.get("OLIST_DB", str(DEFAULT_DB)))
+PLATFORM_INSTANCE = os.environ.get("OLIST_INSTANCE", "olist_dirty")
 GMS_URL = os.environ.get("DATAHUB_GMS_URL", "http://100.114.31.63:8080")
 TOKEN = os.environ.get("DATAHUB_GMS_TOKEN", "")
 

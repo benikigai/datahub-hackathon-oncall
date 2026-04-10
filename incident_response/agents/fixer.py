@@ -7,6 +7,10 @@ generating valid Python).
 import os
 from datetime import datetime, timezone
 
+# Which "production" instance to write quarantine annotations to.
+# Defaults to olist_dirty; override via env to target olist_dirty_2.
+DIRTY_INSTANCE = os.environ.get("OLIST_DIRTY_INSTANCE", "olist_dirty")
+
 from incident_response.agents.base import BaseAgent
 from incident_response.events import (
     agent_started,
@@ -51,7 +55,7 @@ class Fixer(BaseAgent):
         urns_written: list[str] = []
         for g in gap:
             table = g["table"]
-            urn = datahub_sdk.make_dataset_urn(f"olist_dirty.main", table)
+            urn = datahub_sdk.make_dataset_urn(f"{DIRTY_INSTANCE}.main", table)
             root_cause = f"{int(g['observed']) if g['observed'] is not None else '?'} {g['check']} violations"
 
             await self._emit(tool_called(
