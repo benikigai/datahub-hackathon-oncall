@@ -4,7 +4,7 @@
 ## LEFT terminal — incident_response harness + GE setup
 - [x] Task L0: Smoke tests — all endpoints reachable — SIMPLE
 - [x] Task L1: Repo scaffold + git init — SIMPLE
-- [ ] Task L2: Event models + tools layer — MODERATE
+- [x] Task L2: Event models + tools layer — MODERATE
 - [ ] Task L3: GE setup + run against both instances — MODERATE
 - [ ] Task L4: BaseAgent + LoRA-or-base swap — SIMPLE
 - [ ] Task L5: Coordinator agent (Kimi-K2-Thinking) — MODERATE
