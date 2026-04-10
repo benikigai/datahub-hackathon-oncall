@@ -48,5 +48,10 @@
     "input_usd": 0.03,
     "output_usd": 0.09
   },
-  "labs_represented": ["Moonshot (Beijing)", "Meta (USA)", "MiniMax (Shanghai)"]
+  "labs_represented": ["Moonshot (Beijing)", "Meta (USA)", "MiniMax (Shanghai)"],
+  "links": {
+    "huggingface": "https://huggingface.co/BenjaminBear/llama-3.1-8b-datahub-graphql-lora-v1/tree/main",
+    "wandb": "https://wandb.ai/benjamin-shyong-ikigai-endeavors-llc/datahub-graphql-lora/runs/qhmoh063?nw=nwuserbenjaminshyong",
+    "github": "https://github.com/benikigai/datahub-hackathon-oncall"
+  }
 }

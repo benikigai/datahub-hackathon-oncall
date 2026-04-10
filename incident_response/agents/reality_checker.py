@@ -44,6 +44,11 @@ about the row counts."""
 # These are the 3 tables we always check (the planted-issue tables)
 INSTRUMENTED_TABLES = ["olist_order_items", "olist_customers", "olist_products"]
 
+# Which "production" instance to compare against the clean source.
+# Defaults to olist_dirty; override via env to test against olist_dirty_2.
+DIRTY_INSTANCE = os.environ.get("OLIST_DIRTY_INSTANCE", "olist_dirty")
+SOURCE_INSTANCE = os.environ.get("OLIST_SOURCE_INSTANCE", "olist_source")
+
 
 def _ds_urn(instance: str, table: str) -> str:
     return f"urn:li:dataset:(urn:li:dataPlatform:sqlite,{instance}.main.{table},PROD)"
@@ -90,7 +95,7 @@ class RealityChecker(BaseAgent):
         dirty_results: dict[str, dict] = {}
         source_results: dict[str, dict] = {}
         for table in INSTRUMENTED_TABLES:
-            for instance, target in [("olist_dirty", dirty_results), ("olist_source", source_results)]:
+            for instance, target in [(DIRTY_INSTANCE, dirty_results), (SOURCE_INSTANCE, source_results)]:
                 q = _build_assertions_query(instance, table)
                 try:
                     data = await datahub_graphql.query_async(q)

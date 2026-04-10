@@ -117,6 +117,17 @@
       const code = $("sample-graphql");
       code.textContent = m.sample_pair.graphql;
       if (window.Prism) Prism.highlightElement(code);
+
+      // Artifact links
+      const links = m.links || {};
+      const setLink = (id, url) => {
+        const el = $(id);
+        if (el && url) { el.href = url; el.style.display = ""; }
+        else if (el) { el.style.display = "none"; }
+      };
+      setLink("ft-link-hf", links.huggingface);
+      setLink("ft-link-wandb", links.wandb);
+      setLink("ft-link-gh", links.github);
     } catch (e) {
       console.error("Failed to load finetune_metrics.json", e);
     }

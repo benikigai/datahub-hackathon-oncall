@@ -31,6 +31,10 @@ GraphQL yourself — describe what you want in English and call the translator.
 Return a brief 1-2 sentence summary of what you found, mentioning the
 affected dataset and the upstream chain."""
 
+# Which "production" instance to investigate (default olist_dirty,
+# override via env to test against olist_dirty_2).
+DIRTY_INSTANCE = os.environ.get("OLIST_DIRTY_INSTANCE", "olist_dirty")
+
 
 class Detective(BaseAgent):
     name = "detective"
@@ -67,7 +71,7 @@ class Detective(BaseAgent):
             target_urn = None
 
         if not target_urn:
-            target_urn = "urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.main.v_seller_performance,PROD)"
+            target_urn = f"urn:li:dataset:(urn:li:dataPlatform:sqlite,{DIRTY_INSTANCE}.main.v_seller_performance,PROD)"
 
         await self._emit(graphql_executed(
             self.name,
@@ -94,9 +98,9 @@ class Detective(BaseAgent):
         except Exception:
             # Fallback: hardcoded upstream chain (we know what feeds v_seller_performance)
             upstream = [
-                "urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.main.olist_order_items,PROD)",
-                "urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.main.olist_orders,PROD)",
-                "urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.main.olist_sellers,PROD)",
+                f"urn:li:dataset:(urn:li:dataPlatform:sqlite,{DIRTY_INSTANCE}.main.olist_order_items,PROD)",
+                f"urn:li:dataset:(urn:li:dataPlatform:sqlite,{DIRTY_INSTANCE}.main.olist_orders,PROD)",
+                f"urn:li:dataset:(urn:li:dataPlatform:sqlite,{DIRTY_INSTANCE}.main.olist_sellers,PROD)",
             ]
 
         await self._emit(graphql_executed(
@@ -108,9 +112,9 @@ class Detective(BaseAgent):
         # Always include the 3 known-affected tables in the upstream set so the
         # Reality-Checker has all the targets it needs.
         for known in [
-            "urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.main.olist_order_items,PROD)",
-            "urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.main.olist_customers,PROD)",
-            "urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.main.olist_products,PROD)",
+            f"urn:li:dataset:(urn:li:dataPlatform:sqlite,{DIRTY_INSTANCE}.main.olist_order_items,PROD)",
+            f"urn:li:dataset:(urn:li:dataPlatform:sqlite,{DIRTY_INSTANCE}.main.olist_customers,PROD)",
+            f"urn:li:dataset:(urn:li:dataPlatform:sqlite,{DIRTY_INSTANCE}.main.olist_products,PROD)",
         ]:
             if known not in upstream:
                 upstream.append(known)
@@ -148,11 +152,11 @@ class Detective(BaseAgent):
 
     def _fallback_result(self) -> dict:
         return {
-            "target_urn": "urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.main.v_seller_performance,PROD)",
+            "target_urn": f"urn:li:dataset:(urn:li:dataPlatform:sqlite,{DIRTY_INSTANCE}.main.v_seller_performance,PROD)",
             "upstream": [
-                "urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.main.olist_order_items,PROD)",
-                "urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.main.olist_customers,PROD)",
-                "urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.main.olist_products,PROD)",
+                f"urn:li:dataset:(urn:li:dataPlatform:sqlite,{DIRTY_INSTANCE}.main.olist_order_items,PROD)",
+                f"urn:li:dataset:(urn:li:dataPlatform:sqlite,{DIRTY_INSTANCE}.main.olist_customers,PROD)",
+                f"urn:li:dataset:(urn:li:dataPlatform:sqlite,{DIRTY_INSTANCE}.main.olist_products,PROD)",
             ],
             "lineage_path": ["v_seller_performance", "olist_order_items", "olist_sellers"],
         }
