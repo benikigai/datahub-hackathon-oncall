@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "data-oncall"
+version = "0.1.0"
+description = "4-agent incident response team for data quality bugs (DataHub × Nebius hackathon, April 10, 2026)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Ben" }]
+
+dependencies = [
+    # CRITICAL: GX must be <1.0.0 — DataHub plugin doesn't support GX 1.x
+    "great_expectations>=0.18.0,<1.0.0",
+    "acryl-datahub-gx-plugin",
+    "acryl-datahub",
+    # LLM client
+    "openai>=1.0.0",
+    # Models / validation
+    "pydantic>=2.0",
+    # Dashboard
+    "fastapi",
+    "uvicorn[standard]",
+    "sse-starlette",
+    # GraphQL parsing for the validator
+    "gql>=3.4",
+    # HTTP
+    "requests",
+    "httpx",
+    # Env loading
+    "python-dotenv",
+    # Async
+    "anyio",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7",
+    "pytest-asyncio>=0.23",
+    "pytest-timeout",
+]
+
+[project.scripts]
+page-team = "incident_response.triggers.page_team:main"
+
+[tool.setuptools.packages.find]
+include = ["incident_response*", "dashboard*"]
+exclude = ["tests*", "docs*", "training*", "gx*", "scripts*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
