@@ -1,0 +1,234 @@
+[
+  {
+    "id": 1,
+    "category": "simple",
+    "description": "Task L0: Smoke tests — verify DataHub at 100.114.31.63:8080 reachable, generate DataHub PAT and store at ~/.config/openclaw/datahub_pat (chmod 600), test calls to all 3 Nebius models (moonshotai/Kimi-K2-Thinking, meta-llama/Meta-Llama-3.1-8B-Instruct, MiniMaxAI/MiniMax-M2.5). Files: scripts/smoke_test.sh",
+    "verify": "bash scripts/smoke_test.sh",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 2,
+    "category": "simple",
+    "description": "Task L1: Create repo scaffold — pyproject.toml (with great_expectations<1.0.0 pinned), .env.example (7 env vars), .gitignore, README.md skeleton, incident_response/ + agents/ + tools/ + triggers/ packages with __init__.py, gx/, dashboard/, training/. git init.",
+    "verify": "pip install -e . && python -c 'import incident_response' && git status",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 3,
+    "category": "moderate",
+    "description": "Task L2: Event models + tools layer — incident_response/events.py (Pydantic Event models matching SSE protocol), tools/datahub_graphql.py (POST helper), tools/nl_to_graphql.py (Llama base wrapper), tools/datahub_sdk.py (Python SDK write helper), tools/slack.py (webhook helper)",
+    "verify": "python -c 'from incident_response.events import Event' && python -m pytest tests/test_tools.py -v",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 4,
+    "category": "moderate",
+    "description": "Task L3: GE setup + run against both instances — gx/setup_gx.py (drop-in from GX-DEEP-DIVE.md, validates olist_dirty.db, expects 3 failures), gx/setup_gx_source.py (validates olist.db, expects 0 failures), gx/data/ symlinks to studio-a kit. Run both, verify 9 assertions land in DataHub UI under olist_source.* and olist_dirty.* Quality tabs.",
+    "verify": "python gx/setup_gx.py && python gx/setup_gx_source.py && python -c 'from incident_response.tools.datahub_graphql import query; r = query(\"{ dataset(urn: \\\"urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.olist_order_items,PROD)\\\") { assertions { assertions { runEvents(limit: 1) { runEvents { result { type } } } } } } }\"); assert any(\"FAILURE\" in str(r))'",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 5,
+    "category": "simple",
+    "description": "Task L4: BaseAgent class + LoRA-or-base swap — incident_response/agents/base.py (abstract BaseAgent class with run() abstractmethod, AsyncOpenAI client setup, emit + tools dict), refactor tools/nl_to_graphql.py to swap base Llama vs LoRA via NL_TO_GRAPHQL_MODEL env var, load Plan B in-context seeds prompt as the system prompt for base model.",
+    "verify": "python -m pytest tests/test_base_agent.py -v && python -c 'from incident_response.tools.nl_to_graphql import nl_to_graphql; print(nl_to_graphql(\"find revenue dashboard in olist_dirty\"))'",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 6,
+    "category": "moderate",
+    "description": "Task L5: Coordinator agent (Kimi-K2-Thinking) — incident_response/agents/coordinator.py + prompts/coordinator.txt. Receives incident, dispatches Detective + Reality-Checker via asyncio.gather, then dispatches Fixer with their outputs, then synthesizes final postmortem. Emits thinking events from Kimi <think> blocks.",
+    "verify": "python -m pytest tests/test_coordinator.py -v",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 7,
+    "category": "moderate",
+    "description": "Task L6: Detective agent (Llama LoRA / base, lineage focus) — incident_response/agents/detective.py + prompts/detective.txt. Identifies affected dataset via search, traces upstream lineage, returns target_urn + upstream list + lineage_path. Emits nl_query, graphql_generated, graphql_executed events.",
+    "verify": "python -m pytest tests/test_detective.py -v",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 8,
+    "category": "moderate",
+    "description": "Task L7: Reality-Checker agent (Llama + Python diff) — incident_response/agents/reality_checker.py + prompts/reality_checker.txt. Queries assertions in BOTH olist_source and olist_dirty, computes Python set diff, then LLM writes the narrative around the diff. Must correctly identify the 3 planted issues (5632 truncated seller_ids, 7955 deleted customers, 988 NULL categories).",
+    "verify": "python -m pytest tests/test_reality_checker.py -v",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 9,
+    "category": "moderate",
+    "description": "Task L8: Fixer agent (MiniMax-M2.5) — incident_response/agents/fixer.py + prompts/fixer.txt. Generates Python SDK code to update editableSchemaMetadata.description AND customProperties on the 3 affected datasets with the incident annotation. Executes the code. Optionally posts to Slack. Emits tool_called, postmortem_written, slack_posted events.",
+    "verify": "python -m pytest tests/test_fixer.py -v",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 10,
+    "category": "moderate",
+    "description": "Task L9: Orchestrator + trigger CLI — incident_response/orchestrator.py (async runner: dispatch + collect, wires Coordinator -> Detective+Reality-Checker (parallel) -> Fixer), incident_response/triggers/page_team.py (CLI entry that POSTs to dashboard /trigger). Total wall time <90s against real Studio A.",
+    "verify": "python -m pytest tests/test_orchestrator.py -v && python -m incident_response.triggers.page_team --dry-run 'test'",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 11,
+    "category": "simple",
+    "description": "Task L10: End-to-end smoke test (LEFT-only, no dashboard) — tests/test_e2e_left.py. Runs the full orchestrator standalone against real Studio A, verifies all 4 agents fire, GE diff finds 3 planted issues, Fixer writes annotations, total wall time <90s.",
+    "verify": "python -m pytest tests/test_e2e_left.py -v --timeout=120",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 12,
+    "category": "simple",
+    "description": "Task M1: Dashboard skeleton + stub events — dashboard/server.py (FastAPI stub), dashboard/stub_agents.py (25 hardcoded events on 200ms cadence), dashboard/static/index.html, style.css, app.js (basic).",
+    "verify": "uvicorn dashboard.server:app --port 8001 & sleep 2 && curl http://localhost:8001/ | grep -q 'COORDINATOR' && pkill -f uvicorn",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 13,
+    "category": "moderate",
+    "description": "Task M2: FastAPI server + SSE endpoint + trigger mutex — dashboard/server.py implements POST /trigger (returns run_id, starts background task, mutex returns 409 if running), GET /stream?run_id (SSE), POST /reset (clears state).",
+    "verify": "uvicorn dashboard.server:app --port 8001 & sleep 2 && curl -X POST http://localhost:8001/trigger -d '{\"incident\":\"test\"}' -H 'Content-Type: application/json' && curl -X POST http://localhost:8001/reset && pkill -f uvicorn",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 14,
+    "category": "simple",
+    "description": "Task M3: HTML 4-pane layout + dark theme — dashboard/static/index.html (header with status + timer, 4-pane grid for Coordinator/Detective/Reality-Checker/Fixer, footer for postmortem), style.css (dark theme, monospace, no JS frameworks).",
+    "verify": "test -f dashboard/static/index.html && grep -q 'COORDINATOR' dashboard/static/index.html && grep -q 'DETECTIVE' dashboard/static/index.html",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 15,
+    "category": "moderate",
+    "description": "Task M4: SSE client + DOM updates — dashboard/static/app.js. EventSource subscribes to /stream, parses incoming events, updates the right pane based on agent field. Coordinator thinking events scroll inside its pane. incident_complete updates the footer.",
+    "verify": "test -f dashboard/static/app.js && grep -q 'EventSource' dashboard/static/app.js",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 16,
+    "category": "simple",
+    "description": "Task M5: Trigger button + reset mechanism — Add Trigger Incident button (POSTs to /trigger, disables while running) and Reset button (POSTs to /reset) to dashboard/static/index.html and app.js.",
+    "verify": "grep -q 'Trigger Incident' dashboard/static/index.html && grep -q 'Reset' dashboard/static/index.html",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 17,
+    "category": "simple",
+    "description": "Task M6: End-to-end test with stubs — Verify the dashboard renders all 25 stub events correctly. Open browser, click Trigger, see events scroll. This is the gate before swapping to real orchestrator.",
+    "verify": "uvicorn dashboard.server:app --port 8001 & sleep 2 && curl -N http://localhost:8001/stream?run_id=stub | head -50 && pkill -f uvicorn",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 18,
+    "category": "moderate",
+    "description": "Task M7: Wire to real orchestrator — Replace stub_agents.py import in dashboard/server.py with incident_response.orchestrator.run. Verify dashboard renders real events from real agents in <90s.",
+    "verify": "uvicorn dashboard.server:app --port 8001 & sleep 2 && curl -X POST http://localhost:8001/trigger -d '{\"incident\":\"revenue dashboard wrong\"}' -H 'Content-Type: application/json' && sleep 90 && pkill -f uvicorn",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 19,
+    "category": "simple",
+    "description": "Task R1: Seeds + R1 batch generation — Save 8 seed pairs from FINETUNE-SEEDS.md as training/seeds.jsonl. training/gen_prompt.txt + training/generate.sh that calls DeepSeek-R1 via Nebius 10x to produce ~300 raw NL->GraphQL pairs in training/raw_pairs.jsonl.",
+    "verify": "wc -l training/seeds.jsonl | grep -q '8 ' && bash training/generate.sh && wc -l training/raw_pairs.jsonl | awk '{print $1}' | xargs -I {} test {} -ge 200",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 20,
+    "category": "moderate",
+    "description": "Task R2: Validate pairs against live DataHub — training/validate_pairs.py (parse with gql + execute against http://100.114.31.63:8080/api/graphql, drop pairs that fail). Output training/validated_pairs.jsonl with >=200 pairs.",
+    "verify": "python training/validate_pairs.py training/raw_pairs.jsonl training/validated_pairs.jsonl && wc -l training/validated_pairs.jsonl | awk '{print $1}' | xargs -I {} test {} -ge 200",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 21,
+    "category": "simple",
+    "description": "Task R3: Format + split + upload to Nebius — training/format_for_nebius.py converts validated pairs to OpenAI chat JSONL with 80/20 split into training/train.jsonl + val.jsonl. Manual upload to Nebius Studio Data Lab.",
+    "verify": "python training/format_for_nebius.py && test -f training/train.jsonl && test -f training/val.jsonl",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 22,
+    "category": "simple",
+    "description": "Task R4: Launch LoRA training — Configure Nebius post-training job (Llama 3.1 8B + LoRA rank 16, alpha 32, LR 2e-4, 3 epochs, batch 4) and launch. Save job ID to training/job_id.txt. Manual UI action.",
+    "verify": "test -f training/job_id.txt && grep -q '.' training/job_id.txt",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 23,
+    "category": "simple",
+    "description": "Task R5: Deploy LoRA endpoint + smoke test — Deploy via Nebius UI when training completes. Save endpoint name to training/endpoint_name.txt. Test all 8 seed NL queries with training/test_endpoint.py — expect >=6/8 to return valid GraphQL.",
+    "verify": "test -f training/endpoint_name.txt && python training/test_endpoint.py",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 24,
+    "category": "simple",
+    "description": "Task R6: Plan B fallback ready — Independent of training. Write training/plan_b_system_prompt.txt with all 8 seed examples in-context for base Llama 8B. Verify nl_to_graphql with NL_TO_GRAPHQL_MODE=plan_b works for >=6/8 seed queries.",
+    "verify": "test -f training/plan_b_system_prompt.txt && NL_TO_GRAPHQL_MODE=plan_b python -c 'from incident_response.tools.nl_to_graphql import nl_to_graphql; print(nl_to_graphql(\"find revenue dashboard\"))'",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 25,
+    "category": "simple",
+    "description": "Task I1: LEFT plugs in LoRA endpoint — Update .env with NL_TO_GRAPHQL_MODEL=<lora-name from training/endpoint_name.txt>. Re-run L10 smoke test.",
+    "verify": "grep -q 'NL_TO_GRAPHQL_MODEL' .env && python -m pytest tests/test_e2e_left.py -v",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 26,
+    "category": "moderate",
+    "description": "Task I2: LEFT × MIDDLE integration test — Run dashboard with real orchestrator. Trigger from CLI AND from dashboard button. Both must complete in <90s and render all events correctly.",
+    "verify": "uvicorn dashboard.server:app --port 8001 & sleep 2 && python -m incident_response.triggers.page_team 'revenue dashboard wrong' && sleep 90 && pkill -f uvicorn",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 27,
+    "category": "moderate",
+    "description": "Task I3: Full end-to-end demo rehearsal — Open DataHub UI in browser tab 2, dashboard in tab 1. Run full demo. Verify annotation appears in DataHub UI when Cmd+Tab. Manual rehearsal x2 to test reset.",
+    "verify": "echo 'Manual rehearsal — see docs/specs/data-oncall-execution-plan.md Task I3 acceptance criteria'",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 28,
+    "category": "simple",
+    "description": "Task I4: Backup video recording — Screen capture a successful demo run. Save to docs/backup_demo.mov. Upload to gdrive PARA folder. Plan C for stage failures.",
+    "verify": "test -f docs/backup_demo.mov",
+    "passes": false,
+    "skipped": false
+  },
+  {
+    "id": 29,
+    "category": "simple",
+    "description": "Task I5: GitHub repo public + final push — gh repo create datahub-hackathon-oncall --public, git remote add origin, git push -u origin main. Verify public access via incognito browser. Final commit message references demo time.",
+    "verify": "git remote -v | grep -q 'datahub-hackathon-oncall' && git ls-remote origin main",
+    "passes": false,
+    "skipped": false
+  }
+]
