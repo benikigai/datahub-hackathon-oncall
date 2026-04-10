@@ -36,4 +36,4 @@
 - [x] Task I2: LEFT × MIDDLE integration test — MODERATE  *(real orchestrator via dashboard SSE → 69s, 50 events, 3 quarantines)*
 - [ ] Task I3: Full end-to-end demo rehearsal — MODERATE
 - [ ] Task I4: Backup video recording — SIMPLE
-- [ ] Task I5: GitHub repo public + final push — SIMPLE
+- [x] Task I5: GitHub repo public + final push — SIMPLE  *(github.com/benikigai/datahub-hackathon-oncall, public, main @ 9f98d7b)*
