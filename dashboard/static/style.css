@@ -170,6 +170,17 @@ body {
   font-weight: 700;
 }
 
+.ft-deployment-note {
+  margin-top: 16px;
+  padding: 16px 20px;
+  background: rgba(255, 170, 68, 0.08);
+  border-left: 4px solid var(--orange-think);
+  border-radius: 4px;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--text-primary);
+}
+
 .loss-table {
   width: 100%;
   border-collapse: collapse;

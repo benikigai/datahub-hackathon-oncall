@@ -47,12 +47,22 @@
         if (status === "trained_pending_deployment") {
           badge.textContent = "TRAINED · PENDING DEPLOY";
           badge.className = "status-pending";
+        } else if (status === "trained_nebius_deploy_deprecated") {
+          badge.textContent = "TRAINED · NEBIUS DEPLOY DEPRECATED";
+          badge.className = "status-pending";
         } else if (status === "deployed") {
           badge.textContent = "DEPLOYED";
           badge.className = "status-done";
         } else {
           badge.textContent = status.toUpperCase();
         }
+      }
+
+      // Deployment note (the why-no-deployed-endpoint explanation)
+      const noteEl = $("ft-deployment-note");
+      if (noteEl) {
+        noteEl.textContent = m.deployment_note || "";
+        noteEl.style.display = m.deployment_note ? "block" : "none";
       }
 
       // Job details
