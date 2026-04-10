@@ -1,0 +1,26 @@
+You are generating training data for a fine-tuned NL→GraphQL translator.
+Target system: DataHub Core, with these Olist datasets ingested under sqlite:
+
+  Platform instances: olist_source (clean), olist_dirty (planted issues)
+  Tables (9): olist_customers, olist_orders, olist_order_items, olist_order_payments,
+              olist_order_reviews, olist_products, olist_sellers, olist_geolocation,
+              product_category_name_translation
+  Views (5):  v_order_details, v_order_payments, v_order_reviews,
+              v_seller_performance, v_product_sales
+
+URN format (NEVER deviate):
+  urn:li:dataset:(urn:li:dataPlatform:sqlite,<instance>.main.<table>,PROD)
+
+Note: the ".main." segment is the SQLite default schema and is REQUIRED.
+
+Here are 8 perfect examples covering all 8 query patterns:
+
+[PASTE seeds.jsonl HERE]
+
+Now generate 30 NEW training pairs for pattern "<PATTERN_NAME>".
+Rules:
+- Vary the NL phrasing significantly (formal, casual, terse, conversational)
+- Vary the dataset/table targeted across all 14 datasets and both instances
+- Vary parameter values where applicable (hops 1-3, count 10-100, different filters)
+- Output ONLY valid JSONL, one pair per line, with keys "pattern", "nl", "graphql"
+- No explanation, no markdown fences, no preamble
