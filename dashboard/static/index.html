@@ -31,34 +31,41 @@
 
 <section id="hero">
   <h1>data-oncall</h1>
-  <p class="hero-tagline">Page a team of agents instead of waking up your on-call engineer.</p>
+  <p class="hero-tagline">A 4-agent incident response loop for DataHub.</p>
   <p class="hero-description">
-    A 4-agent incident response team that finds production data quality bugs by comparing
-    two parallel DataHub instances — and writes the postmortem back into the metadata graph.
-    Built for the <strong>DataHub × Nebius hackathon</strong> at Entrepreneurs First SF, April 10 2026.
+    Four agents — <strong>Kimi-K2-Thinking</strong>, <strong>Llama 3.1 8B + LoRA</strong>,
+    and <strong>MiniMax-M2.5</strong> — query DataHub in parallel to identify an affected
+    dataset, trace its upstream lineage, diff quality assertions across a clean snapshot
+    and a production instance, and write the postmortem back via Python SDK. End-to-end in
+    ~65 seconds. Built for the DataHub × Nebius hackathon, EF SF, April 10 2026.
   </p>
   <div class="hero-cta">
-    <a href="#demo" class="cta primary">▶ Run live demo</a>
-    <a href="https://github.com/benikigai/datahub-hackathon-oncall" target="_blank" rel="noreferrer" class="cta">View on GitHub</a>
+    <a href="#demo" class="cta primary">▶ Live demo</a>
+    <a href="https://github.com/benikigai/datahub-hackathon-oncall" target="_blank" rel="noreferrer" class="cta">GitHub</a>
     <a href="#architecture" class="cta">How it works</a>
   </div>
 </section>
 
 <section id="problem">
-  <h2>The problem</h2>
+  <h2>What it does</h2>
   <p>
-    When a production dashboard shows wrong numbers, you wake up your on-call data engineer.
-    They spend the next hour tracing lineage, comparing schemas, and writing a postmortem
-    nobody reads. <strong>data-oncall replaces that</strong> with a team of 4 specialized AI
-    agents that do the same job in 90 seconds — and writes the postmortem back into DataHub's
-    metadata graph so it's never lost.
+    Given a natural-language incident — <em>"revenue dashboard wrong"</em> — four agents run
+    in parallel. <strong>Detective</strong> identifies the affected dataset and traces
+    upstream lineage. <strong>Reality-Checker</strong> queries quality assertions on the same
+    datasets in two parallel DataHub instances (one clean, one production) and returns the
+    diff. <strong>Fixer</strong> writes the postmortem back to the affected datasets via
+    Python SDK. <strong>Coordinator</strong> orchestrates the other three and synthesizes
+    the final report.
   </p>
   <p>
-    The core insight comes from the hackathon's "6-level rubric" of how AI agents can use a
-    metadata catalog. We targeted <strong>L5 (metadata vs reality gap)</strong> fused with
-    <strong>L6 (multi-agent collaboration)</strong> — the two highest tiers. The Reality-Checker
-    agent specializes in the L5 gap; the other three agents collaborate via DataHub as shared
-    memory for L6.
+    DataHub stores schema, lineage, and ownership — <em>what should be true</em>. The
+    hackathon kit ships two parallel Olist snapshots: one clean, one with three planted
+    referential-integrity bugs. Identical schemas, identical lineage; only the data inside
+    differs. We run 11 quality assertions against both and write the results back as DataHub
+    assertion entities. The diff between those assertion sets <em>is</em> the production
+    incident — no SQL execution at runtime, no data movement. The four agents coordinate by
+    reading and writing the same dataset URNs; DataHub is the shared memory layer. (Maps to
+    L5 + L6 in the hackathon's rubric.)
   </p>
 </section>
 
