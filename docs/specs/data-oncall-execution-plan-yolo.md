@@ -15,13 +15,13 @@
 - [x] Task L10: End-to-end smoke test (LEFT only) — SIMPLE
 
 ## MIDDLE terminal — dashboard
-- [ ] Task M1: Dashboard skeleton + stub events — SIMPLE
-- [ ] Task M2: FastAPI + SSE + trigger mutex — MODERATE
-- [ ] Task M3: HTML 4-pane layout + dark theme — SIMPLE
-- [ ] Task M4: SSE client + DOM updates — MODERATE
-- [ ] Task M5: Trigger button + reset mechanism — SIMPLE
-- [ ] Task M6: End-to-end test with stubs — SIMPLE
-- [ ] Task M7: Wire to real orchestrator — MODERATE
+- [x] Task M1: Dashboard skeleton + stub events — SIMPLE
+- [x] Task M2: FastAPI + SSE + trigger mutex — MODERATE
+- [x] Task M3: HTML 4-pane layout + dark theme + fine-tune story panel — SIMPLE
+- [x] Task M4: SSE client + DOM updates + cost counter + LEDs — MODERATE
+- [x] Task M5: Trigger button + reset mechanism — SIMPLE
+- [x] Task M6: End-to-end test with stubs — SIMPLE
+- [x] Task M7: Wire to real orchestrator — MODERATE
 
 ## RIGHT terminal — fine-tune
 - [ ] Task R1: Seeds + R1 batch generation — SIMPLE
