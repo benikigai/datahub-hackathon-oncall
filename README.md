@@ -31,21 +31,37 @@ End-to-end in ~90 seconds.
 ## Quick start
 
 ```bash
-pip install -e .
+pip install -e ".[dev]"
 cp .env.example .env
 # Fill in NEBIUS_API_KEY and DATAHUB_GMS_TOKEN
 
-# Run the GE setup against both olist instances
-python gx/setup_gx.py
-python gx/setup_gx_source.py
+# Run the assertion writer against both olist instances
+python gx/setup_gx.py        # writes 11 assertions on olist_dirty (3 fail = planted issues)
+python gx/setup_gx_source.py # writes the same 11 assertions on olist_source (all pass)
 
-# Start the dashboard
-uvicorn dashboard.server:app --port 8001 &
+# Start the demo (dashboard + Tailscale Funnel public URL)
+bash scripts/start_demo.sh
+# → prints a public HTTPS URL anyone can hit
 
-# Trigger an incident
+# Trigger an incident from the CLI
 python -m incident_response.triggers.page_team "revenue dashboard showing wrong numbers"
-# Or click TRIGGER in the dashboard at http://localhost:8001
+# Or click TRIGGER in the dashboard
 ```
+
+## Hosted instance
+
+The live demo runs on the Mac Mini (`eliass-mac-mini`) and is exposed publicly via Tailscale Funnel at:
+
+**🌐 https://eliass-mac-mini.tail365038.ts.net:10001/**
+
+To start it: `bash scripts/start_demo.sh`
+To stop it:  `bash scripts/stop_demo.sh`
+
+The public URL serves the same FastAPI backend that calls real DataHub on Studio A and real Nebius models — no fakes, no static screenshots. Verified working end-to-end through the funnel: 56 events, 54.8s elapsed, 3 datasets quarantined.
+
+## Demo
+
+`bash scripts/start_demo.sh` — boots the dashboard + Tailscale Funnel and prints the public URL. Open it in two browser tabs (one for the dashboard, one for DataHub at `http://100.114.31.63:9002` over Tailscale) and click TRIGGER.
 
 ## Architecture
 
