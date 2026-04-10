@@ -92,11 +92,10 @@
                                   (live event stream)
   </pre>
   <p>
-    Coordinator dispatches Detective and Reality-Checker in <strong>parallel</strong> via
-    <code>asyncio.gather</code>, then dispatches Fixer with their combined output, then
-    synthesizes the final postmortem. All four agents <strong>read via GraphQL</strong> and
-    <strong>write via Python SDK</strong> — DataHub's docs explicitly recommend SDK for
-    programmatic writes.
+    Coordinator dispatches Detective and Reality-Checker concurrently with
+    <code>asyncio.gather</code>, awaits both, then dispatches Fixer with their output and
+    produces the final synthesis. Reads go through DataHub's GraphQL API; writes go through
+    the Python SDK (per DataHub's recommendation against GraphQL mutations for programmatic use).
   </p>
 </section>
 
@@ -104,39 +103,35 @@
   <h2>Three labs · Four roles · One fine-tune</h2>
   <table class="info-table">
     <thead>
-      <tr><th>Agent</th><th>Lab</th><th>Model</th><th>Why this model</th></tr>
+      <tr><th>Agent</th><th>Lab</th><th>Model</th><th>Picked for</th></tr>
     </thead>
     <tbody>
       <tr>
         <td>Coordinator</td>
-        <td>Moonshot 🇨🇳</td>
+        <td>Moonshot</td>
         <td><code>moonshotai/Kimi-K2-Thinking</code></td>
-        <td>Long-horizon agentic reasoning with visible <code>&lt;think&gt;</code> traces — judges watch the agent reason in real time</td>
+        <td>Long-horizon planning with visible <code>&lt;think&gt;</code> reasoning traces</td>
       </tr>
       <tr>
         <td>Detective</td>
-        <td>Meta 🇺🇸</td>
+        <td>Meta</td>
         <td><code>meta-llama/Meta-Llama-3.1-8B-Instruct</code> + LoRA</td>
-        <td>Cheapest, fastest model on Nebius. Fine-tuned for NL→GraphQL on 300 pairs</td>
+        <td>Cheapest fast model on Nebius; narrow NL→GraphQL task fits a small LoRA</td>
       </tr>
       <tr>
         <td>Reality-Checker</td>
-        <td>Meta 🇺🇸</td>
+        <td>Meta</td>
         <td>(same LoRA endpoint as Detective)</td>
-        <td>Different system prompt, different role — narrow specialization, shared compute</td>
+        <td>Same model, different system prompt — shared compute, different role</td>
       </tr>
       <tr>
         <td>Fixer</td>
-        <td>MiniMax 🇨🇳</td>
+        <td>MiniMax</td>
         <td><code>MiniMaxAI/MiniMax-M2.5</code></td>
-        <td>Marketed for agentic coding with precision refactoring — ideal for SDK code generation</td>
+        <td>Trained for agentic code generation — drafts the Python SDK quarantine call and the Slack message</td>
       </tr>
     </tbody>
   </table>
-  <p class="labs-pitch">
-    <em>"We didn't use one model. We picked three, each for what it's best at — and we
-    fine-tuned a fourth. All four hosted on Nebius, all four OpenAI-compatible, one unified demo."</em>
-  </p>
 </section>
 
 <section id="model-bar">
@@ -232,13 +227,12 @@
 <section id="data">
   <h2>The data: Olist + planted issues</h2>
   <p>
-    We use the <strong>Brazilian E-Commerce Public Dataset by Olist</strong> — 99k orders
-    across 9 base tables and 5 SQL views. The kit ships <em>two</em> SQLite files with
-    identical schema:
+    The hackathon kit ships the Brazilian E-Commerce dataset by Olist — 99k orders across
+    9 base tables and 5 SQL views — as two SQLite files with identical schemas:
   </p>
   <ul>
-    <li><code>olist.db</code> → loaded into DataHub as platform instance <code>olist_source</code>: clean Kaggle data, the ground-truth reference</li>
-    <li><code>olist_dirty.db</code> → loaded as <code>olist_dirty</code>: same schema, three deliberately planted referential-integrity bugs</li>
+    <li><code>olist.db</code> → ingested as platform instance <code>olist_source</code>: clean Kaggle data</li>
+    <li><code>olist_dirty.db</code> → ingested as <code>olist_dirty</code>: same schema, three planted referential-integrity bugs</li>
   </ul>
 
   <table class="info-table">
@@ -269,43 +263,37 @@
 </section>
 
 <section id="trick">
-  <h2>The L5 trick: two parallel realities</h2>
+  <h2>The cross-instance assertion diff</h2>
   <p>
-    DataHub stores <em>"what should be true"</em> — schema, lineage, ownership, glossary terms.
-    We compute <em>"what actually is"</em> by running 11 quality assertions against both Olist
-    instances and emitting the results back as DataHub assertion entities on each dataset URN.
-  </p>
-  <p>
-    Both instances have <strong>identical schemas, identical lineage, identical ownership</strong>.
-    Only the data inside differs. The Reality-Checker agent queries assertions on both, computes
-    the diff in Python (deterministic), and the LLM writes the narrative around it. The diff
-    <em>is</em> the production incident:
+    Run the 11 quality assertions against <code>olist_source</code>, run them again against
+    <code>olist_dirty</code>, write both result sets back as DataHub assertion entities, then
+    diff them via GraphQL. The Reality-Checker computes the diff in Python (deterministic set
+    difference) and Llama writes the narrative around it.
   </p>
   <table class="info-table">
     <thead>
       <tr><th>Assertion</th><th><code>olist_source</code></th><th><code>olist_dirty</code></th><th>Verdict</th></tr>
     </thead>
     <tbody>
-      <tr><td><code>seller_id</code> length = 32</td><td>✅ pass</td><td>❌ 5,632 fail</td><td>production-only failure</td></tr>
-      <tr><td><code>customer</code> row count = 99,441</td><td>✅ pass</td><td>❌ 7,955 missing</td><td>production-only failure</td></tr>
-      <tr><td><code>product_category</code> not null</td><td>✅ pass</td><td>❌ 988 NULL</td><td>production-only failure</td></tr>
+      <tr><td><code>seller_id</code> length = 32</td><td>✅ pass</td><td>❌ 5,632 fail</td><td>production-only</td></tr>
+      <tr><td><code>customer</code> row count = 99,441</td><td>✅ pass</td><td>❌ 7,955 missing</td><td>production-only</td></tr>
+      <tr><td><code>product_category</code> not null</td><td>✅ pass</td><td>❌ 988 NULL</td><td>production-only</td></tr>
       <tr><td>(8 other assertions across 3 tables)</td><td>✅ pass</td><td>✅ pass</td><td>baseline</td></tr>
     </tbody>
   </table>
   <p>
-    <strong>That's the entire L5 mechanism.</strong> No SQL execution at runtime, no data movement —
-    the agents surface a discrepancy that already lives in the metadata graph. DataHub
-    <em>as a context layer</em> is doing the work.
+    No SQL execution at runtime, no data movement. The assertions were computed once during
+    setup; the agents query assertion entities, not raw data. That's why the demo runs in
+    seconds and scales to warehouse-size datasets.
   </p>
 </section>
 
 <section id="demo-heading">
   <h2>▶ Live demo</h2>
   <p>
-    Click <strong>TRIGGER</strong> below to watch all 4 agents collaborate against real DataHub
-    + real Nebius models in real time. Expected wall time: <strong>~60–90 seconds</strong>.
-    Total cost: <strong>about 2 cents per run</strong>. The Coordinator's reasoning trace
-    streams live in the leftmost pane.
+    Click <strong>TRIGGER</strong> to run the 4-agent loop against the live DataHub at Studio A
+    and the live Nebius models. Wall time: <strong>~65 seconds</strong>. Cost per run:
+    <strong>~$0.02</strong>. The Coordinator's reasoning trace streams in the leftmost pane.
   </p>
 </section>
 
@@ -368,9 +356,9 @@
 <section id="datahub-link">
   <h2>See it in DataHub</h2>
   <p>
-    After a run completes, the Fixer agent has written incident annotations back to DataHub
-    via Python SDK. Open the DataHub UI in a separate tab and refresh any of the affected
-    dataset pages — the warning banner shows up at the top within seconds:
+    After a run completes, the Fixer agent has written incident annotations to the three
+    affected datasets via Python SDK. Open them in DataHub UI to see the warning banner at
+    the top of each page:
   </p>
   <div class="datahub-links">
     <a href="http://100.114.31.63:9002/dataset/urn%3Ali%3Adataset%3A%28urn%3Ali%3AdataPlatform%3Asqlite%2Colist_dirty.main.olist_order_items%2CPROD%29/Quality" target="_blank" rel="noreferrer">
@@ -384,62 +372,60 @@
     </a>
   </div>
   <p class="link-note">
-    These links work from <strong>inside the Tailscale network</strong>. If you're hitting
-    this page from the public internet, the DataHub UI itself isn't exposed — only this
-    dashboard is. The agents reach DataHub over Tailscale; you reach this dashboard over
-    Tailscale Funnel.
+    These links only work from inside the Tailscale network. The DataHub UI itself is not
+    exposed publicly — only this dashboard is, via Tailscale Funnel.
   </p>
 </section>
 
 <section id="stack">
   <h2>Tech stack</h2>
   <table class="info-table stack-table">
-    <thead><tr><th>Layer</th><th>What</th><th>Why</th></tr></thead>
+    <thead><tr><th>Layer</th><th>What</th><th>Notes</th></tr></thead>
     <tbody>
       <tr>
         <td>LLM inference</td>
-        <td>Nebius Token Factory (OpenAI-compatible)</td>
-        <td>One API for 60+ models, OpenAI SDK drop-in</td>
+        <td>Nebius Token Factory</td>
+        <td>OpenAI-compatible, one API for all 4 models</td>
       </tr>
       <tr>
-        <td>Models (4)</td>
+        <td>Models (3 + 1 LoRA)</td>
         <td>Kimi-K2-Thinking · Llama 3.1 8B + LoRA · MiniMax-M2.5</td>
-        <td>3 labs × 4 capabilities (see above)</td>
+        <td>Three labs (Moonshot, Meta, MiniMax)</td>
       </tr>
       <tr>
         <td>Metadata catalog</td>
-        <td>DataHub Core (self-hosted Docker on Studio A)</td>
-        <td>Open-source. The "context layer" the hackathon kit ships</td>
+        <td>DataHub Core</td>
+        <td>Self-hosted via the kit's <code>datahub docker quickstart</code> on Studio A</td>
       </tr>
       <tr>
         <td>Data validation</td>
         <td>Custom Python (sqlite3 + DataHub SDK)</td>
-        <td>Pivoted from Great Expectations 0.18 plugin due to a SQLite URN encoding mismatch — see Build notes below</td>
+        <td>Started with the GE 0.18 plugin; pivoted to direct SDK writes after a SQLite URN encoding mismatch (see Build notes)</td>
       </tr>
       <tr>
         <td>DataHub writes</td>
         <td><code>acryl-datahub</code> Python SDK</td>
-        <td>DataHub explicitly recommends SDK over GraphQL mutations for programmatic writes</td>
+        <td>DataHub recommends SDK over GraphQL mutations for programmatic writes</td>
       </tr>
       <tr>
         <td>Backend</td>
         <td>FastAPI + sse-starlette</td>
-        <td>Server-Sent Events for real-time agent activity streaming</td>
+        <td>SSE streams agent events to the dashboard in real time</td>
       </tr>
       <tr>
         <td>Frontend</td>
-        <td>Vanilla HTML / CSS / JS — no framework</td>
-        <td>Single page, ~1k LOC total. Prism.js for GraphQL syntax highlighting</td>
+        <td>Vanilla HTML / CSS / JS</td>
+        <td>Single page, no framework, ~1k LOC. Prism.js for GraphQL highlighting</td>
       </tr>
       <tr>
         <td>Network</td>
-        <td>Tailscale (Mac Mini ↔ Studio A) + Tailscale Funnel (public HTTPS)</td>
-        <td>Mac Mini reaches Studio A's DataHub over the tailnet; Funnel exposes the dashboard publicly without exposing DataHub itself</td>
+        <td>Tailscale + Tailscale Funnel</td>
+        <td>Mac Mini reaches DataHub over the tailnet; Funnel exposes only the dashboard publicly, not DataHub</td>
       </tr>
       <tr>
         <td>Hosting</td>
         <td><code>eliass-mac-mini.tail365038.ts.net:10001</code></td>
-        <td>Tailscale Funnel auto-provisions HTTPS via Let's Encrypt</td>
+        <td>Funnel auto-provisions HTTPS via Let's Encrypt</td>
       </tr>
     </tbody>
   </table>
@@ -448,9 +434,10 @@
 <section id="build">
   <h2>The build</h2>
   <p>
-    Built in ~3 hours by Claude Code via the <code>/spec → /yolo</code> workflow. 23+ tasks
-    committed across 8 commits on a single feature branch, then merged to <code>main</code>
-    and pushed to a public GitHub repo. Spec doc: <code>docs/specs/data-oncall-execution-plan.md</code>.
+    ~3 hours from empty directory to running demo. Built via Claude Code's
+    <code>/spec → /yolo</code> workflow: write the spec, decompose into 29 tasks, execute
+    sequentially with quality gates and per-task commits. 8 commits on the feature branch,
+    then merged to <code>main</code>. Full spec at <code>docs/specs/data-oncall-execution-plan.md</code>.
   </p>
 
   <h3>Notable gotchas (in chronological order)</h3>
