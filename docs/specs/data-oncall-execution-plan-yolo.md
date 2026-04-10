@@ -6,13 +6,13 @@
 - [x] Task L1: Repo scaffold + git init — SIMPLE
 - [x] Task L2: Event models + tools layer — MODERATE
 - [x] Task L3: GE setup + run against both instances — MODERATE
-- [ ] Task L4: BaseAgent + LoRA-or-base swap — SIMPLE
-- [ ] Task L5: Coordinator agent (Kimi-K2-Thinking) — MODERATE
-- [ ] Task L6: Detective agent (Llama, lineage focus) — MODERATE
-- [ ] Task L7: Reality-Checker agent (Llama + Python diff) — MODERATE
-- [ ] Task L8: Fixer agent (MiniMax-M2.5) — MODERATE
-- [ ] Task L9: Orchestrator + trigger CLI — MODERATE
-- [ ] Task L10: End-to-end smoke test (LEFT only) — SIMPLE
+- [x] Task L4: BaseAgent + LoRA-or-base swap — SIMPLE
+- [x] Task L5: Coordinator agent (Kimi-K2-Thinking) — MODERATE
+- [x] Task L6: Detective agent (Llama, lineage focus) — MODERATE
+- [x] Task L7: Reality-Checker agent (Llama + Python diff) — MODERATE
+- [x] Task L8: Fixer agent (MiniMax-M2.5) — MODERATE
+- [x] Task L9: Orchestrator + trigger CLI — MODERATE
+- [x] Task L10: End-to-end smoke test (LEFT only) — SIMPLE
 
 ## MIDDLE terminal — dashboard
 - [ ] Task M1: Dashboard skeleton + stub events — SIMPLE
