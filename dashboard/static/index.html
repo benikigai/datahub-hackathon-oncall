@@ -14,12 +14,123 @@
     <span class="logo">▲</span> DATA-ONCALL
     <span class="tagline">page a team of agents instead of waking up your on-call engineer</span>
   </div>
+  <nav class="topnav">
+    <a href="#problem">problem</a>
+    <a href="#architecture">arch</a>
+    <a href="#data">data</a>
+    <a href="#demo">demo ▶</a>
+    <a href="#stack">stack</a>
+    <a href="https://github.com/benikigai/datahub-hackathon-oncall" target="_blank" rel="noreferrer">github</a>
+  </nav>
   <div class="status">
     <span id="status-badge" class="status-idle">IDLE</span>
     <span id="elapsed">⏱ 00:00</span>
     <span id="cost-counter">💰 $0.0000</span>
   </div>
 </header>
+
+<section id="hero">
+  <h1>data-oncall</h1>
+  <p class="hero-tagline">Page a team of agents instead of waking up your on-call engineer.</p>
+  <p class="hero-description">
+    A 4-agent incident response team that finds production data quality bugs by comparing
+    two parallel DataHub instances — and writes the postmortem back into the metadata graph.
+    Built for the <strong>DataHub × Nebius hackathon</strong> at Entrepreneurs First SF, April 10 2026.
+  </p>
+  <div class="hero-cta">
+    <a href="#demo" class="cta primary">▶ Run live demo</a>
+    <a href="https://github.com/benikigai/datahub-hackathon-oncall" target="_blank" rel="noreferrer" class="cta">View on GitHub</a>
+    <a href="#architecture" class="cta">How it works</a>
+  </div>
+</section>
+
+<section id="problem">
+  <h2>The problem</h2>
+  <p>
+    When a production dashboard shows wrong numbers, you wake up your on-call data engineer.
+    They spend the next hour tracing lineage, comparing schemas, and writing a postmortem
+    nobody reads. <strong>data-oncall replaces that</strong> with a team of 4 specialized AI
+    agents that do the same job in 90 seconds — and writes the postmortem back into DataHub's
+    metadata graph so it's never lost.
+  </p>
+  <p>
+    The core insight comes from the hackathon's "6-level rubric" of how AI agents can use a
+    metadata catalog. We targeted <strong>L5 (metadata vs reality gap)</strong> fused with
+    <strong>L6 (multi-agent collaboration)</strong> — the two highest tiers. The Reality-Checker
+    agent specializes in the L5 gap; the other three agents collaborate via DataHub as shared
+    memory for L6.
+  </p>
+</section>
+
+<section id="architecture">
+  <h2>Architecture</h2>
+  <pre class="ascii-diagram">
+                      [ Trigger CLI ]                     [ Browser tab 1: Agent Console ]
+                            │                             [ Browser tab 2: DataHub UI    ]
+                            ▼                                       ▲
+                  Coordinator (Kimi-K2-Thinking)                    │ SSE
+                            │                                       │
+                ┌───────────┼───────────┐                           │
+                ▼           ▼           ▼                           │
+            Detective  Reality-Chk    Fixer                         │
+            (Llama+    (Llama+      (MiniMax                        │
+             LoRA)      LoRA)        M2.5)                          │
+                │           │           │                           │
+                └───────────┼───────────┘                           │
+                            ▼                                       │
+                  DataHub @ Studio A 100.114.31.63                  │
+                  GraphQL reads + Python SDK writes                 │
+                            │                                       │
+                            └───────────────────────────────────────┘
+                                  (live event stream)
+  </pre>
+  <p>
+    Coordinator dispatches Detective and Reality-Checker in <strong>parallel</strong> via
+    <code>asyncio.gather</code>, then dispatches Fixer with their combined output, then
+    synthesizes the final postmortem. All four agents <strong>read via GraphQL</strong> and
+    <strong>write via Python SDK</strong> — DataHub's docs explicitly recommend SDK for
+    programmatic writes.
+  </p>
+</section>
+
+<section id="labs">
+  <h2>Three labs · Four roles · One fine-tune</h2>
+  <table class="info-table">
+    <thead>
+      <tr><th>Agent</th><th>Lab</th><th>Model</th><th>Why this model</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Coordinator</td>
+        <td>Moonshot 🇨🇳</td>
+        <td><code>moonshotai/Kimi-K2-Thinking</code></td>
+        <td>Long-horizon agentic reasoning with visible <code>&lt;think&gt;</code> traces — judges watch the agent reason in real time</td>
+      </tr>
+      <tr>
+        <td>Detective</td>
+        <td>Meta 🇺🇸</td>
+        <td><code>meta-llama/Meta-Llama-3.1-8B-Instruct</code> + LoRA</td>
+        <td>Cheapest, fastest model on Nebius. Fine-tuned for NL→GraphQL on 300 pairs</td>
+      </tr>
+      <tr>
+        <td>Reality-Checker</td>
+        <td>Meta 🇺🇸</td>
+        <td>(same LoRA endpoint as Detective)</td>
+        <td>Different system prompt, different role — narrow specialization, shared compute</td>
+      </tr>
+      <tr>
+        <td>Fixer</td>
+        <td>MiniMax 🇨🇳</td>
+        <td><code>MiniMaxAI/MiniMax-M2.5</code></td>
+        <td>Marketed for agentic coding with precision refactoring — ideal for SDK code generation</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="labs-pitch">
+    <em>"We didn't use one model. We picked three, each for what it's best at — and we
+    fine-tuned a fourth. All four hosted on Nebius, all four OpenAI-compatible, one unified demo."</em>
+  </p>
+</section>
 
 <section id="model-bar">
   <div class="model-badge" data-agent="coordinator">
@@ -45,7 +156,7 @@
 </section>
 
 <section id="finetune-story">
-  <h2>FINE-TUNE STORY</h2>
+  <h2>FINE-TUNE STORY <span id="ft-status-badge"></span></h2>
   <div class="finetune-grid">
     <div class="finetune-card">
       <div class="ft-label">Base model</div>
@@ -65,28 +176,130 @@
     </div>
   </div>
 
+  <div class="ft-job-details">
+    <div class="ft-job-row"><span class="ft-job-label">Job ID</span> <code id="ft-job-id">…</code></div>
+    <div class="ft-job-row"><span class="ft-job-label">Job type</span> <span id="ft-job-type">…</span></div>
+    <div class="ft-job-row"><span class="ft-job-label">Created</span> <span id="ft-created">…</span></div>
+    <div class="ft-job-row"><span class="ft-job-label">Completed</span> <span id="ft-completed">…</span></div>
+    <div class="ft-job-row"><span class="ft-job-label">Duration</span> <span id="ft-duration">…</span></div>
+    <div class="ft-job-row"><span class="ft-job-label">Cost</span> <span id="ft-cost">…</span></div>
+  </div>
+
+  <h3 class="ft-section-title">Training loss curve</h3>
+  <div id="loss-curve-container">
+    <table class="loss-table" id="loss-table">
+      <thead>
+        <tr><th>Epoch</th><th>Train loss</th><th>Val loss</th><th></th></tr>
+      </thead>
+      <tbody id="loss-tbody"></tbody>
+    </table>
+    <div class="loss-summary" id="loss-summary"></div>
+  </div>
+
+  <h3 class="ft-section-title">Accuracy on 8-pattern test set</h3>
   <div class="accuracy-bars">
     <div class="bar-row">
-      <span class="bar-label">Base accuracy</span>
+      <span class="bar-label">Base + in-context</span>
       <div class="bar-track"><div class="bar-fill base" id="bar-base"></div></div>
-      <span class="bar-pct" id="bar-base-pct">…</span>
+      <span class="bar-pct" id="bar-base-pct">TBD</span>
     </div>
     <div class="bar-row">
-      <span class="bar-label">Fine-tuned</span>
+      <span class="bar-label">Fine-tuned LoRA</span>
       <div class="bar-track"><div class="bar-fill tuned" id="bar-tuned"></div></div>
-      <span class="bar-pct" id="bar-tuned-pct">…</span>
+      <span class="bar-pct" id="bar-tuned-pct">TBD</span>
     </div>
     <div class="bar-row">
       <span class="bar-label improvement">Improvement</span>
-      <span class="bar-pct delta" id="bar-improvement">…</span>
+      <span class="bar-pct delta" id="bar-improvement">run measure_accuracy.py</span>
     </div>
   </div>
+  <p class="accuracy-note" id="accuracy-note"></p>
 
   <details class="sample-pair">
     <summary>Sample seed pair (one of 8 patterns)</summary>
     <div class="sample-nl"><strong>NL:</strong> <span id="sample-nl"></span></div>
     <pre><code class="language-graphql" id="sample-graphql"></code></pre>
   </details>
+</section>
+
+<section id="data">
+  <h2>The data: Olist + planted issues</h2>
+  <p>
+    We use the <strong>Brazilian E-Commerce Public Dataset by Olist</strong> — 99k orders
+    across 9 base tables and 5 SQL views. The kit ships <em>two</em> SQLite files with
+    identical schema:
+  </p>
+  <ul>
+    <li><code>olist.db</code> → loaded into DataHub as platform instance <code>olist_source</code>: clean Kaggle data, the ground-truth reference</li>
+    <li><code>olist_dirty.db</code> → loaded as <code>olist_dirty</code>: same schema, three deliberately planted referential-integrity bugs</li>
+  </ul>
+
+  <table class="info-table">
+    <thead>
+      <tr><th>Table</th><th>Planted issue</th><th>Scope</th><th>Downstream blast radius</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>olist_customers</code></td>
+        <td>~8% of customer rows physically deleted</td>
+        <td><strong>7,955</strong> rows removed (99,441 → 91,486)</td>
+        <td><code>v_order_details</code> drops orders or shows NULL customer fields. Orphan FKs from <code>olist_orders</code>.</td>
+      </tr>
+      <tr>
+        <td><code>olist_order_items</code></td>
+        <td><code>seller_id</code> values truncated by 1 character</td>
+        <td><strong>5,632</strong> rows modified (32 → 31 chars)</td>
+        <td><code>v_seller_performance</code> undercounts every affected seller's revenue.</td>
+      </tr>
+      <tr>
+        <td><code>olist_products</code></td>
+        <td><code>product_category_name</code> set to NULL</td>
+        <td><strong>988</strong> rows modified</td>
+        <td><code>v_product_sales</code> silently drops uncategorized products from category aggregations.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="trick">
+  <h2>The L5 trick: two parallel realities</h2>
+  <p>
+    DataHub stores <em>"what should be true"</em> — schema, lineage, ownership, glossary terms.
+    We compute <em>"what actually is"</em> by running 11 quality assertions against both Olist
+    instances and emitting the results back as DataHub assertion entities on each dataset URN.
+  </p>
+  <p>
+    Both instances have <strong>identical schemas, identical lineage, identical ownership</strong>.
+    Only the data inside differs. The Reality-Checker agent queries assertions on both, computes
+    the diff in Python (deterministic), and the LLM writes the narrative around it. The diff
+    <em>is</em> the production incident:
+  </p>
+  <table class="info-table">
+    <thead>
+      <tr><th>Assertion</th><th><code>olist_source</code></th><th><code>olist_dirty</code></th><th>Verdict</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>seller_id</code> length = 32</td><td>✅ pass</td><td>❌ 5,632 fail</td><td>production-only failure</td></tr>
+      <tr><td><code>customer</code> row count = 99,441</td><td>✅ pass</td><td>❌ 7,955 missing</td><td>production-only failure</td></tr>
+      <tr><td><code>product_category</code> not null</td><td>✅ pass</td><td>❌ 988 NULL</td><td>production-only failure</td></tr>
+      <tr><td>(8 other assertions across 3 tables)</td><td>✅ pass</td><td>✅ pass</td><td>baseline</td></tr>
+    </tbody>
+  </table>
+  <p>
+    <strong>That's the entire L5 mechanism.</strong> No SQL execution at runtime, no data movement —
+    the agents surface a discrepancy that already lives in the metadata graph. DataHub
+    <em>as a context layer</em> is doing the work.
+  </p>
+</section>
+
+<section id="demo-heading">
+  <h2>▶ Live demo</h2>
+  <p>
+    Click <strong>TRIGGER</strong> below to watch all 4 agents collaborate against real DataHub
+    + real Nebius models in real time. Expected wall time: <strong>~60–90 seconds</strong>.
+    Total cost: <strong>about 2 cents per run</strong>. The Coordinator's reasoning trace
+    streams live in the leftmost pane.
+  </p>
 </section>
 
 <section id="trigger-bar">
@@ -96,7 +309,7 @@
   <button id="trigger-btn" class="primary">TRIGGER</button>
   <button id="reset-btn">RESET</button>
   <label class="stub-toggle">
-    <input type="checkbox" id="stub-mode"> stub mode
+    <input type="checkbox" id="stub-mode"> stub mode (no LLM cost)
   </label>
 </section>
 
@@ -144,6 +357,150 @@
   <div id="postmortem-body" class="empty">Awaiting incident…</div>
   <div id="affected-datasets"></div>
 </section>
+
+<section id="datahub-link">
+  <h2>See it in DataHub</h2>
+  <p>
+    After a run completes, the Fixer agent has written incident annotations back to DataHub
+    via Python SDK. Open the DataHub UI in a separate tab and refresh any of the affected
+    dataset pages — the warning banner shows up at the top within seconds:
+  </p>
+  <div class="datahub-links">
+    <a href="http://100.114.31.63:9002/dataset/urn%3Ali%3Adataset%3A%28urn%3Ali%3AdataPlatform%3Asqlite%2Colist_dirty.main.olist_order_items%2CPROD%29/Quality" target="_blank" rel="noreferrer">
+      → olist_dirty.olist_order_items <span class="link-meta">Quality tab</span>
+    </a>
+    <a href="http://100.114.31.63:9002/dataset/urn%3Ali%3Adataset%3A%28urn%3Ali%3AdataPlatform%3Asqlite%2Colist_dirty.main.olist_customers%2CPROD%29/Quality" target="_blank" rel="noreferrer">
+      → olist_dirty.olist_customers <span class="link-meta">Quality tab</span>
+    </a>
+    <a href="http://100.114.31.63:9002/dataset/urn%3Ali%3Adataset%3A%28urn%3Ali%3AdataPlatform%3Asqlite%2Colist_dirty.main.olist_products%2CPROD%29/Quality" target="_blank" rel="noreferrer">
+      → olist_dirty.olist_products <span class="link-meta">Quality tab</span>
+    </a>
+  </div>
+  <p class="link-note">
+    These links work from <strong>inside the Tailscale network</strong>. If you're hitting
+    this page from the public internet, the DataHub UI itself isn't exposed — only this
+    dashboard is. The agents reach DataHub over Tailscale; you reach this dashboard over
+    Tailscale Funnel.
+  </p>
+</section>
+
+<section id="stack">
+  <h2>Tech stack</h2>
+  <table class="info-table stack-table">
+    <thead><tr><th>Layer</th><th>What</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>LLM inference</td>
+        <td>Nebius Token Factory (OpenAI-compatible)</td>
+        <td>One API for 60+ models, OpenAI SDK drop-in</td>
+      </tr>
+      <tr>
+        <td>Models (4)</td>
+        <td>Kimi-K2-Thinking · Llama 3.1 8B + LoRA · MiniMax-M2.5</td>
+        <td>3 labs × 4 capabilities (see above)</td>
+      </tr>
+      <tr>
+        <td>Metadata catalog</td>
+        <td>DataHub Core (self-hosted Docker on Studio A)</td>
+        <td>Open-source. The "context layer" the hackathon kit ships</td>
+      </tr>
+      <tr>
+        <td>Data validation</td>
+        <td>Custom Python (sqlite3 + DataHub SDK)</td>
+        <td>Pivoted from Great Expectations 0.18 plugin due to a SQLite URN encoding mismatch — see Build notes below</td>
+      </tr>
+      <tr>
+        <td>DataHub writes</td>
+        <td><code>acryl-datahub</code> Python SDK</td>
+        <td>DataHub explicitly recommends SDK over GraphQL mutations for programmatic writes</td>
+      </tr>
+      <tr>
+        <td>Backend</td>
+        <td>FastAPI + sse-starlette</td>
+        <td>Server-Sent Events for real-time agent activity streaming</td>
+      </tr>
+      <tr>
+        <td>Frontend</td>
+        <td>Vanilla HTML / CSS / JS — no framework</td>
+        <td>Single page, ~1k LOC total. Prism.js for GraphQL syntax highlighting</td>
+      </tr>
+      <tr>
+        <td>Network</td>
+        <td>Tailscale (Mac Mini ↔ Studio A) + Tailscale Funnel (public HTTPS)</td>
+        <td>Mac Mini reaches Studio A's DataHub over the tailnet; Funnel exposes the dashboard publicly without exposing DataHub itself</td>
+      </tr>
+      <tr>
+        <td>Hosting</td>
+        <td><code>eliass-mac-mini.tail365038.ts.net:10001</code></td>
+        <td>Tailscale Funnel auto-provisions HTTPS via Let's Encrypt</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="build">
+  <h2>The build</h2>
+  <p>
+    Built in ~3 hours by Claude Code via the <code>/spec → /yolo</code> workflow. 23+ tasks
+    committed across 8 commits on a single feature branch, then merged to <code>main</code>
+    and pushed to a public GitHub repo. Spec doc: <code>docs/specs/data-oncall-execution-plan.md</code>.
+  </p>
+
+  <h3>Notable gotchas (in chronological order)</h3>
+  <ul class="gotchas">
+    <li>
+      <strong>Great Expectations 0.18.x ⊥ Python 3.13+.</strong> Pydantic v1's
+      <code>typing.Subscripted</code> handling broke on Python 3.14. Pinned the venv to
+      Python 3.12 via <code>requires-python = "&gt;=3.10,&lt;3.13"</code>.
+    </li>
+    <li>
+      <strong>The DataHub GE plugin generates SQLite URNs that don't match the kit's ingestion.</strong>
+      The plugin encodes the full <code>.db</code> file path as the database-name component.
+      The kit's ingestion uses <code>&lt;instance&gt;.main.&lt;table&gt;</code> instead.
+      Spent 30 minutes debugging, then pivoted from the GE plugin to <strong>direct SDK
+      assertion writes</strong> — same outcome (assertions in DataHub for the Reality-Checker
+      to query), bypasses the URN mismatch entirely.
+    </li>
+    <li>
+      <strong>Kimi-K2-Thinking returns reasoning in <code>message.reasoning</code></strong>,
+      not <code>message.content</code>. Initial test with <code>max_tokens=20</code> returned
+      <code>content: None</code> because Kimi spent its budget on reasoning. Fix: read both
+      fields, stream <code>reasoning</code> as <code>thinking</code> SSE events to the
+      dashboard. <em>That's where the live "watch the model think" effect comes from.</em>
+    </li>
+    <li>
+      <strong>DataHub's GraphQL schema doesn't expose <code>AssertionInfo.customProperties</code>.</strong>
+      The Reality-Checker initially tried to filter assertions by check name from
+      customProperties — but that field isn't queryable via GraphQL even though it's writable
+      via the Python SDK. Fix: use <code>info.datasetAssertion.nativeType</code> instead.
+    </li>
+    <li>
+      <strong>Tailscale Funnel only allows ports 443/8443/10000–10999.</strong> Initially
+      grabbed root <code>443</code> by accident, which clobbered an existing internal route to
+      <code>127.0.0.1:18789</code> (one of Ben's other services). Detected immediately,
+      restored the original mapping as a tailnet-only serve rule, and moved data-oncall to
+      <code>10001</code>.
+    </li>
+  </ul>
+
+  <h3>Stats</h3>
+  <ul class="stats">
+    <li><strong>~3 hours</strong> total build time</li>
+    <li><strong>23+ tasks</strong> from spec, 8 commits</li>
+    <li><strong>~3,500 LOC</strong> across Python + HTML/CSS/JS</li>
+    <li><strong>54.8 seconds</strong> median end-to-end run time (verified via public Funnel URL)</li>
+    <li><strong>~$0.02–0.05</strong> cost per run (Nebius API)</li>
+    <li><strong>56 SSE events</strong> per run, 28 of which are Kimi reasoning chunks</li>
+  </ul>
+</section>
+
+<footer>
+  <p>
+    Built for the <strong>DataHub × Nebius hackathon</strong> at Entrepreneurs First SF, April 10, 2026.<br>
+    <a href="https://github.com/benikigai/datahub-hackathon-oncall" target="_blank" rel="noreferrer">github.com/benikigai/datahub-hackathon-oncall</a>
+    · spec at <code>docs/specs/data-oncall-execution-plan.md</code>
+  </p>
+</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-graphql.min.js"></script>

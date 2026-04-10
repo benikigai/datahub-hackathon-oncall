@@ -1,27 +1,44 @@
 {
   "base_model": "meta-llama/Meta-Llama-3.1-8B-Instruct",
-  "fine_tuned_model": "meta-llama/Meta-Llama-3.1-8B-Instruct + LoRA",
+  "fine_tuned_model": "meta-llama/Llama-3.1-8B:datahub-graphql-v1",
+  "fine_tune_status": "trained_pending_deployment",
+  "job_id": "ftjob-7a7a0231d0554bffa13675e2642853ea",
+  "job_type": "SFT + LoRA",
+  "created_at": "2026-04-10T14:26:20-07:00",
+  "completed_at": "2026-04-10T14:42:06-07:00",
+  "training_time_min": 16,
+  "estimated_cost_usd": 0.00,
   "lora_config": {
     "rank": 16,
     "alpha": 32,
     "lr": "2e-4",
     "epochs": 3,
-    "batch_size": 4,
-    "training_time_min": 25
+    "batch_size": 4
   },
   "training": {
     "pairs_total": 300,
     "train_pairs": 240,
     "val_pairs": 60,
     "patterns_covered": 8,
-    "drop_rate_pct": 20,
     "validated_against": "DataHub Core @ Studio A (real GraphQL execution)"
   },
+  "loss_curve": [
+    { "epoch": 1, "train_loss": 5.1268382, "val_loss": 1.6210932 },
+    { "epoch": 2, "train_loss": 4.6506729, "val_loss": 1.2178777 },
+    { "epoch": 3, "train_loss": 4.1959414, "val_loss": 1.0707635 }
+  ],
+  "loss_summary": {
+    "val_loss_start": 1.6210932,
+    "val_loss_end": 1.0707635,
+    "val_loss_drop_pct": 33.9,
+    "trajectory": "monotonically decreasing — healthy, no overfitting"
+  },
   "accuracy": {
-    "base_pct": 50,
-    "fine_tuned_pct": 90,
-    "improvement_pct": 40,
-    "metric_definition": "% of generated GraphQL that parses AND returns non-empty results"
+    "base_pct": null,
+    "fine_tuned_pct": null,
+    "improvement_pct": null,
+    "metric_definition": "% of generated GraphQL that parses AND returns non-empty results when executed against live DataHub. Compute via: python training/measure_accuracy.py",
+    "note": "Run measure_accuracy.py against both base + fine-tuned endpoints to compute. Fine-tuned model must be deployed in Nebius UI first to get a callable endpoint slug."
   },
   "sample_pair": {
     "nl": "Find the dataset for the seller performance view in olist_dirty",
