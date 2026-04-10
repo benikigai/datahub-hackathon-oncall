@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>data-oncall · DataHub × Nebius hackathon</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body>
+
+<header id="topbar">
+  <div class="brand">
+    <span class="logo">▲</span> DATA-ONCALL
+    <span class="tagline">page a team of agents instead of waking up your on-call engineer</span>
+  </div>
+  <div class="status">
+    <span id="status-badge" class="status-idle">IDLE</span>
+    <span id="elapsed">⏱ 00:00</span>
+    <span id="cost-counter">💰 $0.0000</span>
+  </div>
+</header>
+
+<section id="model-bar">
+  <div class="model-badge" data-agent="coordinator">
+    <div class="badge-name">COORDINATOR</div>
+    <div class="badge-model">Kimi-K2-Thinking</div>
+    <div class="badge-meta">Moonshot · $0.60/$2.50 · 45.7 t/s · eu-north1</div>
+  </div>
+  <div class="model-badge" data-agent="detective">
+    <div class="badge-name">DETECTIVE</div>
+    <div class="badge-model">Llama 3.1 8B + LoRA</div>
+    <div class="badge-meta">Meta · $0.03/$0.09 · 155 t/s · eu-north1 fast</div>
+  </div>
+  <div class="model-badge" data-agent="reality_checker">
+    <div class="badge-name">REALITY-CHECKER</div>
+    <div class="badge-model">Llama 3.1 8B + LoRA</div>
+    <div class="badge-meta">Meta · same endpoint · L5 specialist</div>
+  </div>
+  <div class="model-badge" data-agent="fixer">
+    <div class="badge-name">FIXER</div>
+    <div class="badge-model">MiniMax-M2.5</div>
+    <div class="badge-meta">MiniMax · $0.30/$1.20 · 36.8 t/s · us-central1</div>
+  </div>
+</section>
+
+<section id="finetune-story">
+  <h2>FINE-TUNE STORY</h2>
+  <div class="finetune-grid">
+    <div class="finetune-card">
+      <div class="ft-label">Base model</div>
+      <div class="ft-value" id="ft-base-model">…</div>
+    </div>
+    <div class="finetune-card">
+      <div class="ft-label">Fine-tuned</div>
+      <div class="ft-value" id="ft-tuned-model">…</div>
+    </div>
+    <div class="finetune-card">
+      <div class="ft-label">Training pairs</div>
+      <div class="ft-value" id="ft-pairs">…</div>
+    </div>
+    <div class="finetune-card">
+      <div class="ft-label">LoRA config</div>
+      <div class="ft-value" id="ft-lora">…</div>
+    </div>
+  </div>
+
+  <div class="accuracy-bars">
+    <div class="bar-row">
+      <span class="bar-label">Base accuracy</span>
+      <div class="bar-track"><div class="bar-fill base" id="bar-base"></div></div>
+      <span class="bar-pct" id="bar-base-pct">…</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">Fine-tuned</span>
+      <div class="bar-track"><div class="bar-fill tuned" id="bar-tuned"></div></div>
+      <span class="bar-pct" id="bar-tuned-pct">…</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label improvement">Improvement</span>
+      <span class="bar-pct delta" id="bar-improvement">…</span>
+    </div>
+  </div>
+
+  <details class="sample-pair">
+    <summary>Sample seed pair (one of 8 patterns)</summary>
+    <div class="sample-nl"><strong>NL:</strong> <span id="sample-nl"></span></div>
+    <pre><code class="language-graphql" id="sample-graphql"></code></pre>
+  </details>
+</section>
+
+<section id="trigger-bar">
+  <input id="incident-input" type="text"
+    value="revenue dashboard showing wrong numbers — investigate"
+    placeholder="describe the incident…">
+  <button id="trigger-btn" class="primary">TRIGGER</button>
+  <button id="reset-btn">RESET</button>
+  <label class="stub-toggle">
+    <input type="checkbox" id="stub-mode"> stub mode
+  </label>
+</section>
+
+<main id="agent-grid">
+  <div class="agent-pane" data-agent="coordinator">
+    <div class="pane-header">
+      <span class="led idle"></span>
+      <span class="pane-title">COORDINATOR</span>
+      <span class="pane-model">Kimi-K2-Thinking</span>
+    </div>
+    <div class="pane-body" id="pane-coordinator"></div>
+    <div class="pane-footer"><span class="tokens">0 tok</span> · <span class="cost">$0.0000</span></div>
+  </div>
+  <div class="agent-pane" data-agent="detective">
+    <div class="pane-header">
+      <span class="led idle"></span>
+      <span class="pane-title">DETECTIVE</span>
+      <span class="pane-model">Llama+LoRA</span>
+    </div>
+    <div class="pane-body" id="pane-detective"></div>
+    <div class="pane-footer"><span class="tokens">0 tok</span> · <span class="cost">$0.0000</span></div>
+  </div>
+  <div class="agent-pane" data-agent="reality_checker">
+    <div class="pane-header">
+      <span class="led idle"></span>
+      <span class="pane-title">REALITY-CHECKER</span>
+      <span class="pane-model">Llama+LoRA</span>
+    </div>
+    <div class="pane-body" id="pane-reality_checker"></div>
+    <div class="pane-footer"><span class="tokens">0 tok</span> · <span class="cost">$0.0000</span></div>
+  </div>
+  <div class="agent-pane" data-agent="fixer">
+    <div class="pane-header">
+      <span class="led idle"></span>
+      <span class="pane-title">FIXER</span>
+      <span class="pane-model">MiniMax-M2.5</span>
+    </div>
+    <div class="pane-body" id="pane-fixer"></div>
+    <div class="pane-footer"><span class="tokens">0 tok</span> · <span class="cost">$0.0000</span></div>
+  </div>
+</main>
+
+<section id="postmortem">
+  <h2>POSTMORTEM</h2>
+  <div id="postmortem-body" class="empty">Awaiting incident…</div>
+  <div id="affected-datasets"></div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-graphql.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
