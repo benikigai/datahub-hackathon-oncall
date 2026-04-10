@@ -33,17 +33,85 @@
     try {
       const r = await fetch("/static/finetune_metrics.json");
       const m = await r.json();
+
       $("ft-base-model").textContent = m.base_model.split("/").pop();
       $("ft-tuned-model").textContent = m.fine_tuned_model.split("/").pop();
       $("ft-pairs").textContent = `${m.training.train_pairs} train · ${m.training.val_pairs} val · ${m.training.patterns_covered} patterns`;
       const lc = m.lora_config;
-      $("ft-lora").textContent = `rank ${lc.rank} · α ${lc.alpha} · LR ${lc.lr} · ${lc.epochs}ep · ${lc.training_time_min}min`;
+      $("ft-lora").textContent = `rank ${lc.rank} · α ${lc.alpha} · LR ${lc.lr} · ${lc.epochs}ep · batch ${lc.batch_size}`;
 
-      $("bar-base").style.width = m.accuracy.base_pct + "%";
-      $("bar-tuned").style.width = m.accuracy.fine_tuned_pct + "%";
-      $("bar-base-pct").textContent = m.accuracy.base_pct + "%";
-      $("bar-tuned-pct").textContent = m.accuracy.fine_tuned_pct + "%";
-      $("bar-improvement").textContent = "+" + m.accuracy.improvement_pct + " points";
+      // Status badge
+      const status = m.fine_tune_status || "unknown";
+      const badge = $("ft-status-badge");
+      if (badge) {
+        if (status === "trained_pending_deployment") {
+          badge.textContent = "TRAINED · PENDING DEPLOY";
+          badge.className = "status-pending";
+        } else if (status === "deployed") {
+          badge.textContent = "DEPLOYED";
+          badge.className = "status-done";
+        } else {
+          badge.textContent = status.toUpperCase();
+        }
+      }
+
+      // Job details
+      const setText = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+      setText("ft-job-id", m.job_id || "—");
+      setText("ft-job-type", m.job_type || "—");
+      setText("ft-created", formatTs(m.created_at));
+      setText("ft-completed", formatTs(m.completed_at));
+      setText("ft-duration", m.training_time_min ? `${m.training_time_min} min` : "—");
+      setText("ft-cost", m.estimated_cost_usd != null ? `$${m.estimated_cost_usd.toFixed(2)}` : "—");
+
+      // Loss curve table
+      const tbody = $("loss-tbody");
+      if (tbody && Array.isArray(m.loss_curve)) {
+        tbody.innerHTML = "";
+        // Find max for the bar scaling
+        const maxLoss = Math.max(...m.loss_curve.map(e => Math.max(e.train_loss, e.val_loss)));
+        for (const epoch of m.loss_curve) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>Epoch ${epoch.epoch}</td>
+            <td>${epoch.train_loss.toFixed(4)}</td>
+            <td>${epoch.val_loss.toFixed(4)}</td>
+            <td>
+              <div class="loss-mini-bar">
+                <div class="loss-mini-fill train" style="width: ${(epoch.train_loss / maxLoss * 100).toFixed(1)}%"></div>
+                <div class="loss-mini-fill val" style="width: ${(epoch.val_loss / maxLoss * 100).toFixed(1)}%"></div>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        }
+      }
+      if (m.loss_summary) {
+        $("loss-summary").innerHTML = `
+          <div class="loss-summary-row">
+            <strong>Val loss:</strong> ${m.loss_summary.val_loss_start.toFixed(4)} → ${m.loss_summary.val_loss_end.toFixed(4)}
+            <span class="loss-delta">−${m.loss_summary.val_loss_drop_pct}%</span>
+          </div>
+          <div class="loss-summary-row">${m.loss_summary.trajectory}</div>
+        `;
+      }
+
+      // Accuracy bars (may be null until measure_accuracy.py runs)
+      if (m.accuracy.base_pct != null && m.accuracy.fine_tuned_pct != null) {
+        $("bar-base").style.width = m.accuracy.base_pct + "%";
+        $("bar-tuned").style.width = m.accuracy.fine_tuned_pct + "%";
+        $("bar-base-pct").textContent = m.accuracy.base_pct + "%";
+        $("bar-tuned-pct").textContent = m.accuracy.fine_tuned_pct + "%";
+        $("bar-improvement").textContent = "+" + m.accuracy.improvement_pct + " points";
+        $("accuracy-note").textContent = m.accuracy.metric_definition || "";
+      } else {
+        $("bar-base").style.width = "0%";
+        $("bar-tuned").style.width = "0%";
+        $("bar-base-pct").textContent = "TBD";
+        $("bar-tuned-pct").textContent = "TBD";
+        $("bar-improvement").textContent = "run measure_accuracy.py";
+        $("accuracy-note").textContent = m.accuracy.note || "";
+      }
 
       $("sample-nl").textContent = m.sample_pair.nl;
       const code = $("sample-graphql");
@@ -52,6 +120,14 @@
     } catch (e) {
       console.error("Failed to load finetune_metrics.json", e);
     }
+  }
+
+  function formatTs(iso) {
+    if (!iso) return "—";
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString("en-US", { hour: "numeric", minute: "2-digit", month: "short", day: "numeric" });
+    } catch { return iso; }
   }
 
   // ─── LED state per agent ─────────────────────────────────────────────

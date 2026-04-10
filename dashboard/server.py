@@ -98,8 +98,23 @@ async def trigger(request: Request):
 
 @app.post("/reset")
 async def reset():
+    """Reset the in-memory run state AND clear DataHub annotations on the
+    3 affected datasets so the next demo run starts clean."""
     state.reset()
-    return {"ok": True}
+    cleared = 0
+    cleared_error = None
+    try:
+        from incident_response.tools import datahub_sdk
+        urns = [
+            datahub_sdk.make_dataset_urn("olist_dirty.main", "olist_order_items"),
+            datahub_sdk.make_dataset_urn("olist_dirty.main", "olist_customers"),
+            datahub_sdk.make_dataset_urn("olist_dirty.main", "olist_products"),
+        ]
+        datahub_sdk.reset_dataset_descriptions(urns)
+        cleared = len(urns)
+    except Exception as e:
+        cleared_error = str(e)
+    return {"ok": True, "datahub_annotations_cleared": cleared, "error": cleared_error}
 
 
 @app.get("/stream")
