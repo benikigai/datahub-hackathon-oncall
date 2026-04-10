@@ -7,7 +7,7 @@ name = "data-oncall"
 version = "0.1.0"
 description = "4-agent incident response team for data quality bugs (DataHub × Nebius hackathon, April 10, 2026)"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"  # GE 0.18.x doesn't support Python 3.13+ (Pydantic v1 + typing.Subscripted incompat)
 license = { text = "MIT" }
 authors = [{ name = "Ben" }]
 
