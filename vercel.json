@@ -1,0 +1,28 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": null,
+  "installCommand": null,
+  "outputDirectory": "dashboard/static",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/static/(.*)", "destination": "/$1" },
+    { "source": "/trigger", "destination": "/index.html" },
+    { "source": "/stream", "destination": "/index.html" },
+    { "source": "/reset", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/finetune_metrics.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=60" }
+      ]
+    }
+  ]
+}
