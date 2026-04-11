@@ -423,6 +423,20 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .dataset-link:hover { border-color: var(--cyan-nl); background: var(--bg-base); }
 
+/* Replay-mode banner (only shown on Vercel / non-live hosts) */
+#replay-banner {
+  background: linear-gradient(135deg, rgba(255, 170, 68, 0.15), rgba(255, 170, 68, 0.05));
+  border-bottom: 1px solid var(--orange-think);
+  color: var(--text-primary);
+  padding: 14px 22px;
+  font-size: 15px;
+  line-height: 1.6;
+  text-align: center;
+}
+#replay-banner strong { color: var(--orange-think); margin-right: 8px; }
+#replay-banner a { color: var(--cyan-nl); text-decoration: none; }
+#replay-banner a:hover { text-decoration: underline; }
+
 /* Scrollbars */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg-base); }
