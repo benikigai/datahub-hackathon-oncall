@@ -4,6 +4,63 @@
   const PANES = ["coordinator", "detective", "reality_checker", "fixer"];
   const STATE_KEY = { idle: "idle", thinking: "thinking", querying: "querying", done: "done", error: "error" };
 
+  // ─── Replay mode detection ───────────────────────────────────────────
+  // On the Tailscale Funnel URL we have a real live backend on Mac Mini.
+  // On any other host (Vercel, localhost-static, github.io, etc.) the
+  // backend isn't reachable — we fall back to a client-side replay of the
+  // canned 27-event sequence so the page still tells the full story.
+  const IS_REPLAY_MODE =
+    !location.hostname.includes("eliass-mac-mini") &&
+    !location.hostname.includes("localhost") &&
+    !location.hostname.includes("127.0.0.1");
+
+  // Client-side event sequence for replay mode (mirrors dashboard/stub_agents.py)
+  const REPLAY_EVENTS = [
+    { delay: 0,    agent: "system",          type: "agent_started",          data: { incident: "revenue dashboard showing wrong numbers — investigate" } },
+    { delay: 300,  agent: "coordinator",     type: "agent_started",          data: {} },
+    { delay: 900,  agent: "coordinator",     type: "thinking",               data: { text: "User reports the revenue dashboard showing wrong numbers. I need to identify which dataset backs the dashboard, trace its upstream lineage, validate the upstream against reality, and propose a fix." } },
+    { delay: 1600, agent: "coordinator",     type: "thinking",               data: { text: "I'll dispatch Detective and Reality-Checker in parallel via asyncio.gather — Detective on lineage, Reality-Checker on the cross-instance assertion diff. Fixer waits for both, then writes the postmortem back." } },
+    { delay: 2200, agent: "detective",       type: "agent_started",          data: {} },
+    { delay: 2400, agent: "reality_checker", type: "agent_started",          data: {} },
+    { delay: 2900, agent: "detective",       type: "nl_query",               data: { question: "Find the dataset for the seller performance view in olist_dirty" } },
+    { delay: 3700, agent: "detective",       type: "graphql_generated",      data: { graphql: '{ search(input: {type: DATASET, query: "v_seller_performance", start: 0, count: 5}) { searchResults { entity { urn ... on Dataset { name platform { name } } } } } }' } },
+    { delay: 4300, agent: "detective",       type: "graphql_executed",       data: { summary: "Identified affected dataset: v_seller_performance", rows: 1 } },
+    { delay: 4700, agent: "reality_checker", type: "nl_query",               data: { question: "Show me all assertions and their latest results for olist_order_items, olist_customers, olist_products in BOTH olist_source and olist_dirty" } },
+    { delay: 5500, agent: "detective",       type: "nl_query",               data: { question: "Get all upstream lineage from olist_dirty.v_seller_performance, 2 hops" } },
+    { delay: 6200, agent: "detective",       type: "graphql_generated",      data: { graphql: '{ lineage(input: {urn: "urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.main.v_seller_performance,PROD)", direction: UPSTREAM, count: 100, hops: 2}) { count entities { entity { urn } degree } } }' } },
+    { delay: 7000, agent: "reality_checker", type: "graphql_executed",       data: { summary: "Queried 6 assertion sets (3 tables × 2 instances)", rows: 6 } },
+    { delay: 7400, agent: "detective",       type: "graphql_executed",       data: { summary: "Found 5 upstream datasets", rows: 5 } },
+    { delay: 8200, agent: "detective",       type: "agent_completed",        data: { summary: "Lineage: v_seller_performance ← olist_order_items ← olist_sellers (3 hops)" } },
+    { delay: 9400, agent: "reality_checker", type: "agent_completed",        data: { summary: "Found 3 production-only failures: 5,632 truncated seller_ids, 7,955 deleted customers, 988 NULL categories" } },
+    { delay: 10000, agent: "coordinator",    type: "coordinator_synthesizing", data: {} },
+    { delay: 10600, agent: "fixer",          type: "agent_started",          data: {} },
+    { delay: 11200, agent: "fixer",          type: "tool_called",            data: { tool: "datahub_sdk.quarantine_dataset", args: { urn: "olist_dirty.main.olist_order_items", incident_id: "INC-REPLAY" } } },
+    { delay: 11800, agent: "fixer",          type: "postmortem_written",     data: { urn: "urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.main.olist_order_items,PROD)", annotation: "⚠️ INC-REPLAY: 5632 seller_id_length_eq_32 violations" } },
+    { delay: 12400, agent: "fixer",          type: "tool_called",            data: { tool: "datahub_sdk.quarantine_dataset", args: { urn: "olist_dirty.main.olist_customers", incident_id: "INC-REPLAY" } } },
+    { delay: 13000, agent: "fixer",          type: "postmortem_written",     data: { urn: "urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.main.olist_customers,PROD)", annotation: "⚠️ INC-REPLAY: 7955 row_count_eq_99441 violations" } },
+    { delay: 13600, agent: "fixer",          type: "tool_called",            data: { tool: "datahub_sdk.quarantine_dataset", args: { urn: "olist_dirty.main.olist_products", incident_id: "INC-REPLAY" } } },
+    { delay: 14200, agent: "fixer",          type: "postmortem_written",     data: { urn: "urn:li:dataset:(urn:li:dataPlatform:sqlite,olist_dirty.main.olist_products,PROD)", annotation: "⚠️ INC-REPLAY: 988 product_category_name_not_null violations" } },
+    { delay: 15000, agent: "fixer",          type: "tool_called",            data: { tool: "slack.post", args: { channel: "#data-incidents" } } },
+    { delay: 15400, agent: "fixer",          type: "slack_posted",           data: { channel: "#data-incidents", text: "🚨 INC-REPLAY: 3 referential integrity bugs in olist_dirty — 3 tables quarantined" } },
+    { delay: 16000, agent: "fixer",          type: "agent_completed",        data: { summary: "Quarantined 3 datasets, Slack post sent" } },
+    { delay: 16600, agent: "coordinator",    type: "thinking",               data: { text: "Synthesizing the final postmortem. Detective traced lineage to v_seller_performance. Reality-Checker found 3 production-only assertion failures. Fixer quarantined the 3 affected tables via Python SDK." } },
+    { delay: 17400, agent: "coordinator",    type: "agent_completed",        data: { summary: "Postmortem complete for INC-REPLAY" } },
+    { delay: 18000, agent: "system",         type: "incident_complete",      data: {
+        elapsed_ms: 17800,
+        postmortem: "INCIDENT INC-REPLAY: Production data quality failure detected in olist_dirty.\n  • olist_order_items: 5,632 seller_id_length_eq_32 violations\n  • olist_customers: 7,955 row_count_eq_99441 violations\n  • olist_products: 988 product_category_name_not_null violations\nAll 11 assertions pass on the clean olist_source instance, confirming the issues are confined to production. 3 datasets quarantined via DataHub Python SDK. Recommend the data-platform team rerun the upstream loader and investigate the source of the corruption."
+      }
+    },
+  ];
+
+  async function runReplay() {
+    const start = Date.now();
+    for (const { delay, agent, type, data } of REPLAY_EVENTS) {
+      const elapsed = Date.now() - start;
+      if (delay > elapsed) await new Promise(r => setTimeout(r, delay - elapsed));
+      handleEvent({ ts: new Date().toISOString(), agent, type, data });
+    }
+  }
+
   // ─── DOM helpers ─────────────────────────────────────────────────────
   const $ = (id) => document.getElementById(id);
   const paneBody = (agent) => $(`pane-${agent}`);
@@ -319,6 +376,16 @@
 
     startRun();
 
+    // Replay mode: fire canned events client-side, no backend call
+    if (IS_REPLAY_MODE) {
+      try {
+        await runReplay();
+      } finally {
+        $("trigger-btn").disabled = false;
+      }
+      return;
+    }
+
     try {
       const r = await fetch("/trigger", {
         method: "POST",
@@ -377,6 +444,8 @@
     $("status-badge").className = "status-idle";
     $("status-badge").textContent = "IDLE";
     $("trigger-btn").disabled = false;
+    // In replay mode there's no backend to call
+    if (IS_REPLAY_MODE) return;
     try {
       await fetch("/reset", { method: "POST" });
     } catch (e) {
@@ -384,9 +453,24 @@
     }
   }
 
+  // ─── Replay-mode banner ──────────────────────────────────────────────
+  function showReplayBanner() {
+    if (!IS_REPLAY_MODE) return;
+    const banner = document.createElement("div");
+    banner.id = "replay-banner";
+    banner.innerHTML = `
+      <strong>📼 DEMO REPLAY MODE</strong> — This hosted version replays a canned sequence client-side.
+      For the actual live backend running on Mac Mini hardware (real DataHub, real Nebius models), visit
+      <a href="https://eliass-mac-mini.tail365038.ts.net:10001/" target="_blank" rel="noreferrer">the Tailscale Funnel URL</a>
+      (availability depends on Mac Mini being online).
+    `;
+    document.body.insertBefore(banner, document.getElementById("topbar").nextSibling);
+  }
+
   // ─── Wire up ─────────────────────────────────────────────────────────
   document.addEventListener("DOMContentLoaded", () => {
     loadFinetuneMetrics();
+    showReplayBanner();
     $("trigger-btn").addEventListener("click", trigger);
     $("reset-btn").addEventListener("click", reset);
     $("incident-input").addEventListener("keydown", (e) => {
