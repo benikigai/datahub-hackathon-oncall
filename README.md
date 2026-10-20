@@ -1,76 +1,71 @@
 # data-oncall
 
-> *Page a team of agents instead of waking up your on-call engineer.*
+**Page a team of agents instead of waking up your on-call engineer.**
 
-A 4-agent incident response team for data quality bugs. Built for the **DataHub × Nebius hackathon**, April 10, 2026 at EF SF.
+> **Status:** Hackathon project — DataHub × Nebius AI Hackathon, Entrepreneurs First, San Francisco, 2026-04-10. **1st place.** Reference build. The hosted site is a static replay of a real run.
+
+[Replay demo](https://datahub-hackathon-oncall.vercel.app) · [Fine-tuned model](https://huggingface.co/BenjaminBear/llama-3.1-8b-datahub-graphql-lora-v1) · [Training run (W&B)](https://wandb.ai/benjamin-shyong-ikigai-endeavors-llc/datahub-graphql-lora/runs/qhmoh063)
 
 ## What it does
 
-When paged with a natural-language production data incident, four specialized agents — **Coordinator**, **Detective**, **Reality-Checker**, **Fixer** — collaborate via DataHub as shared metadata memory to:
+A four-agent incident response team for data quality bugs. Given a natural-language page such as *"revenue dashboard showing wrong numbers"*, the agents use DataHub as shared metadata memory to:
 
-1. Identify the affected dataset
-2. Trace upstream/downstream lineage
-3. Compare assertion results across two parallel DataHub instances (clean vs production) to find the gap
-4. Propose a fix and write the postmortem back to DataHub via Python SDK
-5. Post to Slack
-6. Surface the entire workflow live in a 4-pane web console
+1. Identify the affected dataset.
+2. Trace upstream and downstream lineage.
+3. Diff assertion results between two DataHub instances (clean source vs planted-dirty production) to find the gap.
+4. Propose a fix and write the postmortem back to DataHub through the Python SDK.
+5. Post to Slack.
+6. Stream the whole workflow into a four-pane web console.
 
-End-to-end in ~90 seconds.
+End to end in about 90 seconds. The planted issues in the demo data: 5,632 truncated `seller_id`s, 7,955 deleted customers and 988 NULL categories in the Olist e-commerce dataset.
 
-## The four agents
+## How it works
 
-| # | Agent | Lab | Model | Why this model |
-|---|---|---|---|---|
-| 1 | **Coordinator** | Moonshot | `Kimi-K2-Thinking` | Long-horizon agentic reasoning with visible `<think>` traces |
-| 2 | **Detective** | Meta | `Llama 3.1 8B + LoRA` | Fast, cheap, fine-tuned for NL→GraphQL on 300 pairs |
-| 3 | **Reality-Checker** | Meta | (same LoRA endpoint) | Same model, different system prompt |
-| 4 | **Fixer** | MiniMax | `MiniMax-M2.5` | Marketed for agentic coding with precision refactoring |
+| # | Agent | Model (all on Nebius, OpenAI-compatible) | Job |
+|---|---|---|---|
+| 1 | **Coordinator** | Moonshot `Kimi-K2-Thinking` | Long-horizon plan, visible reasoning traces |
+| 2 | **Detective** | Meta Llama 3.1 8B + LoRA | NL → DataHub GraphQL, fine-tuned on 300 pairs |
+| 3 | **Reality-Checker** | same LoRA endpoint | Verifies Detective's findings with a different system prompt |
+| 4 | **Fixer** | MiniMax `MiniMax-M2.5` | Fix proposal and postmortem |
 
-**Three labs, four roles, one fine-tune.** All four hosted on Nebius, all four OpenAI-compatible.
+Three labs, four roles, one fine-tune.
 
-## Quick start
+```
+page (CLI or dashboard TRIGGER)
+   └─> Coordinator ──> Detective ──> DataHub GraphQL (lineage, assertions)
+            │              └─> Reality-Checker (cross-check clean vs dirty)
+            └─> Fixer ──> DataHub SDK (postmortem) ──> Slack
+   events ──> FastAPI SSE ──> 4-pane dashboard
+```
+
+- `incident_response/` — orchestrator, agents, prompts, tools, triggers
+- `gx/` — Great Expectations assertions written to both Olist instances (11 each; 3 fail on the dirty copy)
+- `training/` — pair generation, validation and formatting for the Nebius fine-tune
+- `dashboard/` — FastAPI + SSE server and the static console (replay mode on Vercel)
+
+Architecture and build plan: [`docs/specs/`](docs/specs/).
+
+## Stack
+
+Python · DataHub (GraphQL + Python SDK) · Great Expectations · Nebius AI Studio (Kimi-K2-Thinking, Llama 3.1 8B LoRA, MiniMax-M2.5) · FastAPI + SSE · Slack webhooks · Vercel (static replay) · Weights & Biases.
+
+## Run locally
+
+Requires two DataHub instances loaded with the Olist dataset (clean and dirty) and a Nebius account.
 
 ```bash
 pip install -e ".[dev]"
-cp .env.example .env
-# Fill in NEBIUS_API_KEY and DATAHUB_GMS_TOKEN
+cp .env.example .env          # fill NEBIUS_API_KEY, DATAHUB_GMS_TOKEN, etc.
 
-# Run the assertion writer against both olist instances
-python gx/setup_gx.py        # writes 11 assertions on olist_dirty (3 fail = planted issues)
-python gx/setup_gx_source.py # writes the same 11 assertions on olist_source (all pass)
+python gx/setup_gx.py         # 11 assertions on olist_dirty (3 fail = planted issues)
+python gx/setup_gx_source.py  # same 11 on olist_source (all pass)
 
-# Start the demo (dashboard + Tailscale Funnel public URL)
-bash scripts/start_demo.sh
-# → prints a public HTTPS URL anyone can hit
-
-# Trigger an incident from the CLI
+bash scripts/start_demo.sh    # dashboard + backend
 python -m incident_response.triggers.page_team "revenue dashboard showing wrong numbers"
-# Or click TRIGGER in the dashboard
 ```
 
-## Hosted instance
+The original event demo exposed the dashboard through a Tailscale Funnel on a home machine; that setup is not maintained. The Vercel site serves a replay of a recorded end-to-end run.
 
-The live demo runs on the Mac Mini (`demo-host`) and is exposed publicly via Tailscale Funnel at:
+## Credits
 
-**🌐 https://demo-host.tailnet.example:10001/**
-
-To start it: `bash scripts/start_demo.sh`
-To stop it:  `bash scripts/stop_demo.sh`
-
-The public URL serves the same FastAPI backend that calls real DataHub on DataHub host and real Nebius models — no fakes, no static screenshots. Verified working end-to-end through the funnel: 56 events, 54.8s elapsed, 3 datasets quarantined.
-
-## Demo
-
-`bash scripts/start_demo.sh` — boots the dashboard + Tailscale Funnel and prints the public URL. Open it in two browser tabs (one for the dashboard, one for DataHub at `http://HOST_IP:9002` over Tailscale) and click TRIGGER.
-
-## Architecture
-
-See `docs/specs/research/DataHub-Nebius - PROJECT-SPEC.md` for the locked architecture.
-
-See `docs/specs/data-oncall-execution-plan.md` for the build plan.
-
-See `docs/specs/dashboard-design.md` for the dashboard layout.
-
-## Demo narrative
-
-See `docs/specs/research/DataHub-Nebius - STATE-2026-04-10.md` § "Demo Narrative" for the full 4-pane walkthrough with real planted-issue counts (5,632 truncated seller_ids, 7,955 deleted customers, 988 NULL categories).
+Built by [Ben Shyong](https://github.com/benikigai) with his AI agent Elias (commit author) at the DataHub × Nebius AI Hackathon. Sponsors: DataHub, Nebius.
