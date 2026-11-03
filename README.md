@@ -17,7 +17,7 @@ A four-agent incident response team for data quality bugs. Given a natural-langu
 5. Post to Slack.
 6. Stream the whole workflow into a four-pane web console.
 
-End to end in about 90 seconds. The planted issues in the demo data: 5,632 truncated `seller_id`s, 7,955 deleted customers and 988 NULL categories in the Olist e-commerce dataset.
+End to end in 54.8 seconds (median). The planted issues in the demo data: 5,632 truncated `seller_id`s, 7,955 deleted customers and 988 NULL categories in the Olist e-commerce dataset.
 
 ## How it works
 
